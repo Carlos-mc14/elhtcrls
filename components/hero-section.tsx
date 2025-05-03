@@ -184,7 +184,7 @@ export function HeroSection() {
               transition={{ duration: 0.5, delay: 0.6 }}
             />
             <Image
-              src="/placeholder.svg?height=500&width=800"
+              src="/logo-with-default-bg.png?height=500&width=500"
               alt="Plantas en crecimiento en un huerto"
               fill
               className="object-cover rounded-lg"
@@ -192,7 +192,7 @@ export function HeroSection() {
               priority
             />
 
-            {/* Elementos decorativos sobre la imagen 
+            {/* Elementos decorativos sobre la imagen */}
             <motion.div
               className="absolute bottom-4 right-4 z-20 bg-white/80 backdrop-blur-sm p-3 rounded-lg shadow-lg"
               initial={{ y: 50, opacity: 0 }}
@@ -203,7 +203,7 @@ export function HeroSection() {
                 <Leaf className="h-5 w-5 text-leaf-dark" aria-hidden="true" />
                 <span className="text-sm font-medium text-leaf-dark">Cultivo Orgánico</span>
               </div>
-            </motion.div>*/}
+            </motion.div>
           </motion.div>
         </div>
       </div>
