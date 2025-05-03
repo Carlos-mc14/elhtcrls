@@ -1,6 +1,8 @@
 import { ProductForm } from "@/components/product-form"
 import { getPosts } from "@/lib/api/posts"
 
+export const dynamic = "force-dynamic"
+
 export default async function NewProductPage() {
   const posts = await getPosts()
 

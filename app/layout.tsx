@@ -12,7 +12,7 @@ import { Suspense } from 'react'
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "ElHuertoDeCarlos - Tu diario de cultivo de plantas",
+  title: "El Huerto De Carlos - Tu diario de cultivo de plantas",
   description: "Blog especializado en el cultivo y cuidado de plantas",
   metadataBase: new URL(process.env.NEXTAUTH_URL || "http://localhost:3000"),
 }

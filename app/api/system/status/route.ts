@@ -3,6 +3,8 @@ import { getConnectionStatus } from "@/lib/mongodb"
 import { isRedisAvailable } from "@/lib/redis"
 import redis from "@/lib/redis"
 
+export const dynamic = "force-dynamic"
+
 export async function GET() {
   try {
     // Obtener estado de MongoDB
