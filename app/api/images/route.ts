@@ -3,9 +3,8 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { connectToDatabase } from "@/lib/mongodb"
 import { Image } from "@/lib/models/image"
-import { writeFile, mkdir } from "fs/promises"
+import { writeFile, mkdir, access } from "fs/promises"
 import path from "path"
-import { nanoid } from "nanoid"
 import sharp from "sharp"
 
 // Función para asegurar que el directorio existe
@@ -15,6 +14,48 @@ async function ensureDir(dirPath: string) {
   } catch (error) {
     console.error("Error creating directory:", error)
   }
+}
+
+// Función para limpiar el nombre del archivo para SEO
+function cleanFilename(filename: string): string {
+  // Eliminar la extensión
+  const name = filename.substring(0, filename.lastIndexOf("."))
+  const extension = filename.substring(filename.lastIndexOf("."))
+
+  // Reemplazar caracteres no alfanuméricos con guiones
+  const cleanName = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "-")
+    .replace(/-+/g, "-") // Reemplazar múltiples guiones con uno solo
+    .replace(/^-|-$/g, "") // Eliminar guiones al principio y al final
+
+  return cleanName + extension
+}
+
+// Función para verificar si un archivo existe
+async function fileExists(filePath: string): Promise<boolean> {
+  try {
+    await access(filePath)
+    return true
+  } catch {
+    return false
+  }
+}
+
+// Función para generar un nombre único si ya existe
+async function getUniqueFilename(basePath: string, filename: string): Promise<string> {
+  const name = filename.substring(0, filename.lastIndexOf("."))
+  const extension = filename.substring(filename.lastIndexOf("."))
+
+  let uniqueFilename = filename
+  let counter = 1
+
+  while (await fileExists(path.join(basePath, uniqueFilename))) {
+    uniqueFilename = `${name}(${counter})${extension}`
+    counter++
+  }
+
+  return uniqueFilename
 }
 
 export async function POST(req: NextRequest) {
@@ -40,11 +81,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Solo se permiten archivos de imagen" }, { status: 400 })
     }
 
-    // Generar un nombre de archivo único
-    const uniqueId = nanoid()
-    const extension = file.name.split(".").pop()
-    const filename = `${uniqueId}.${extension}`
-
     // Crear directorios para imágenes
     const publicDir = path.join(process.cwd(), "public")
     const uploadsDir = path.join(publicDir, "uploads")
@@ -52,8 +88,14 @@ export async function POST(req: NextRequest) {
 
     await ensureDir(userDir)
 
+    // Limpiar el nombre del archivo para SEO
+    const cleanedFilename = cleanFilename(file.name)
+
+    // Verificar si ya existe y obtener un nombre único
+    const uniqueFilename = await getUniqueFilename(userDir, cleanedFilename)
+
     // Ruta completa del archivo
-    const filePath = path.join(userDir, filename)
+    const filePath = path.join(userDir, uniqueFilename)
 
     // Convertir el archivo a un Buffer
     const buffer = Buffer.from(await file.arrayBuffer())
@@ -65,14 +107,14 @@ export async function POST(req: NextRequest) {
     await writeFile(filePath, buffer)
 
     // Ruta relativa para acceder desde la web
-    const relativePath = `/uploads/${session.user.id}/${filename}`
+    const relativePath = `/uploads/${session.user.id}/${uniqueFilename}`
 
     // Conectar a la base de datos
     await connectToDatabase()
 
     // Guardar información de la imagen en la base de datos
     const image = new Image({
-      filename,
+      filename: uniqueFilename,
       originalName: file.name,
       path: relativePath,
       size: file.size,
@@ -91,7 +133,7 @@ export async function POST(req: NextRequest) {
       image: {
         _id: image._id,
         path: relativePath,
-        filename,
+        filename: uniqueFilename,
         isPublic,
         width: imageInfo.width,
         height: imageInfo.height,
