@@ -1,7 +1,9 @@
 import { cache } from "react"
 import { connectToDatabase } from "@/lib/mongodb"
+import { User } from "@/lib/models/user"       // ← IMPORTAR User primero
 import { Post } from "@/lib/models/post"
 import { fetchWithCache, invalidateCache, invalidateCachePattern } from "@/lib/redis"
+
 
 // Función auxiliar para convertir _id de MongoDB a string y manejar fechas
 function convertMongoIds(obj: any): any {

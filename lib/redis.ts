@@ -77,7 +77,9 @@ export async function invalidateCachePattern(pattern: string): Promise<void> {
     if (redisAvailable) {
       const keys = await redis.keys(pattern)
       if (keys.length > 0) {
-        await redis.del(...keys)
+        for (const key of keys) {
+          await redis.del(key)
+        }
         console.log(`Caché invalidada para patrón ${pattern}: ${keys.length} claves`)
       }
     }
