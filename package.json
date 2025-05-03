@@ -69,6 +69,7 @@
     "react-hook-form": "^7.54.1",
     "react-resizable-panels": "^2.1.7",
     "recharts": "2.15.0",
+    "sharp": "^0.34.1",
     "slugify": "latest",
     "snappy": "latest",
     "socks": "latest",

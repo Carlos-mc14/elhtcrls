@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { signIn } from "next-auth/react"
@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
 import { Loader2 } from "lucide-react"
 
-export function RegisterForm() {
+// Componente que usa useSearchParams
+function RegisterFormContent() {
   const router = useRouter()
   const { toast } = useToast()
 
@@ -176,5 +177,14 @@ export function RegisterForm() {
         </Link>
       </div>
     </div>
+  )
+}
+
+// Componente principal que envuelve el contenido en un Suspense
+export function RegisterForm() {
+  return (
+    <Suspense fallback={<div>Cargando...</div>}>
+      <RegisterFormContent />
+    </Suspense>
   )
 }
