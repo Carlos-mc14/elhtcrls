@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Suspense } from 'react'
 
 interface TagFilterProps {
   selectedTag?: string
@@ -36,6 +37,7 @@ export function TagFilter({ selectedTag = "" }: TagFilterProps) {
   }
 
   return (
+    <Suspense>
     <Select value={selectedTag} onValueChange={handleTagChange}>
       <SelectTrigger>
         <SelectValue placeholder="Filtrar por etiqueta" />
@@ -49,5 +51,6 @@ export function TagFilter({ selectedTag = "" }: TagFilterProps) {
         ))}
       </SelectContent>
     </Select>
+    </Suspense>
   )
 }

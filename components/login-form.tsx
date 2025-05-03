@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
+import { Suspense } from 'react'
 
 export function LoginForm() {
   const router = useRouter()
@@ -54,6 +55,7 @@ export function LoginForm() {
   }
 
   return (
+    <Suspense>
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
         <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded">
@@ -81,5 +83,6 @@ export function LoginForm() {
         <p>¿No tienes una cuenta? Contacta con un administrador para crear una cuenta.</p>
       </div>
     </form>
+    </Suspense>
   )
 }

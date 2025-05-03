@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight } from "lucide-react"
+import { Suspense } from 'react'
 
 interface PaginationProps {
   currentPage: number
@@ -72,6 +73,7 @@ export function Pagination({ currentPage, totalPages }: PaginationProps) {
   if (totalPages <= 1) return null
 
   return (
+    <Suspense>
     <div className="flex justify-center items-center space-x-2 mt-8">
       <Button
         variant="outline"
@@ -110,5 +112,6 @@ export function Pagination({ currentPage, totalPages }: PaginationProps) {
         <span className="sr-only">Página siguiente</span>
       </Button>
     </div>
+    </Suspense>
   )
 }

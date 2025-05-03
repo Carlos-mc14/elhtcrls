@@ -48,8 +48,6 @@ export function SearchBar({ defaultValue = "" }: SearchBarProps) {
 
   return (
     <Suspense>
-
-    
     <form onSubmit={handleSearch} className="relative w-full">
       <Input
         type="search"
