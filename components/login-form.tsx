@@ -55,7 +55,7 @@ export function LoginForm() {
   }
 
   return (
-    <Suspense>
+    <Suspense fallback={<div>Cargando...</div>}>
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
         <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded">

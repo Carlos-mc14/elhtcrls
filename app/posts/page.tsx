@@ -3,6 +3,7 @@ import { PostCard } from "@/components/post-card"
 import { SearchBar } from "@/components/search-bar"
 import { TagFilter } from "@/components/tag-filter"
 import { Pagination } from "@/components/pagination"
+import { Suspense } from "react"
 
 interface PostsPageProps {
   searchParams: {
@@ -24,7 +25,7 @@ export default async function PostsPage({ searchParams }: PostsPageProps) {
   const search = searchParam || ""
   const tag = tagParam || ""
 
-  const { posts, totalPages }: { posts: Array<{ _id: string; [key: string]: any }>; totalPages: number } = await getPosts({
+  const { posts, totalPages }: { posts: Array<{ _id: string; title: string; slug: string; createdAt: string; [key: string]: any }>; totalPages: number } = await getPosts({
     page,
     search,
     tag,
@@ -38,10 +39,14 @@ export default async function PostsPage({ searchParams }: PostsPageProps) {
 
       <div className="flex flex-col md:flex-row gap-6 mb-8">
         <div className="w-full md:w-2/3">
-          <SearchBar defaultValue={search} />
+          <Suspense fallback={<div>Cargando búsqueda…</div>}>
+  +          <SearchBar defaultValue={search} />
+  +        </Suspense>
         </div>
         <div className="w-full md:w-1/3">
-          <TagFilter selectedTag={tag} />
+          <Suspense fallback={<div>Cargando filtros…</div>}>
+  +          <TagFilter selectedTag={tag} />
+  +        </Suspense>
         </div>
       </div>
 

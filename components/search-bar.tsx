@@ -47,7 +47,7 @@ export function SearchBar({ defaultValue = "" }: SearchBarProps) {
   }
 
   return (
-    <Suspense>
+    <Suspense fallback={<div>Cargando...</div>}>
     <form onSubmit={handleSearch} className="relative w-full">
       <Input
         type="search"

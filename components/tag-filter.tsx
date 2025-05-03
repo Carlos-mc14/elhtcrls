@@ -37,7 +37,7 @@ export function TagFilter({ selectedTag = "" }: TagFilterProps) {
   }
 
   return (
-    <Suspense>
+    <Suspense fallback={<div>Cargando...</div>}>
     <Select value={selectedTag} onValueChange={handleTagChange}>
       <SelectTrigger>
         <SelectValue placeholder="Filtrar por etiqueta" />

@@ -73,7 +73,7 @@ export function Pagination({ currentPage, totalPages }: PaginationProps) {
   if (totalPages <= 1) return null
 
   return (
-    <Suspense>
+    <Suspense fallback={<div>Cargando...</div>}>
     <div className="flex justify-center items-center space-x-2 mt-8">
       <Button
         variant="outline"
