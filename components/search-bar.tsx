@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Search, X } from "lucide-react"
+import { Suspense } from 'react'
 
 interface SearchBarProps {
   defaultValue?: string
@@ -46,6 +47,9 @@ export function SearchBar({ defaultValue = "" }: SearchBarProps) {
   }
 
   return (
+    <Suspense>
+
+    
     <form onSubmit={handleSearch} className="relative w-full">
       <Input
         type="search"
@@ -78,5 +82,6 @@ export function SearchBar({ defaultValue = "" }: SearchBarProps) {
         <span className="sr-only">Buscar</span>
       </Button>
     </form>
+    </Suspense>
   )
 }
