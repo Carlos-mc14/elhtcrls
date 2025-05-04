@@ -34,8 +34,10 @@ export function ImageGallery({ onSelectImage, onClose }: ImageGalleryProps) {
       }
 
       const data = await response.json()
+      console.log("Imágenes cargadas:", data.images)
       setImages(data.images || [])
     } catch (error) {
+      console.error("Error al cargar imágenes:", error)
       toast({
         title: "Error",
         description: "No se pudieron cargar las imágenes",
@@ -56,6 +58,7 @@ export function ImageGallery({ onSelectImage, onClose }: ImageGalleryProps) {
   }
 
   const handleImageUpload = (imageData: any) => {
+    console.log("Imagen subida recibida:", imageData)
     setImages((prev) => [imageData, ...prev])
     toast({
       title: "Imagen subida",
@@ -79,6 +82,7 @@ export function ImageGallery({ onSelectImage, onClose }: ImageGalleryProps) {
         description: "La imagen se ha eliminado correctamente",
       })
     } catch (error) {
+      console.error("Error al eliminar imagen:", error)
       toast({
         title: "Error",
         description: "No se pudo eliminar la imagen",
@@ -108,6 +112,7 @@ export function ImageGallery({ onSelectImage, onClose }: ImageGalleryProps) {
         description: `La imagen ahora es ${!isPublic ? "pública" : "privada"}`,
       })
     } catch (error) {
+      console.error("Error al actualizar imagen:", error)
       toast({
         title: "Error",
         description: "No se pudo actualizar la imagen",
@@ -118,8 +123,8 @@ export function ImageGallery({ onSelectImage, onClose }: ImageGalleryProps) {
 
   const handleSelectImage = () => {
     if (selectedImage) {
-      const formattedPath = selectedImage.startsWith("/") ? selectedImage : `/${selectedImage}`
-      onSelectImage(formattedPath)
+      console.log("Imagen seleccionada:", selectedImage)
+      onSelectImage(selectedImage)
       onClose()
     }
   }

@@ -65,20 +65,28 @@ export function ImageUploader({ onImageUploaded, showGalleryOptions = false }: I
       })
 
       if (!response.ok) {
-        throw new Error("Error al subir la imagen")
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Error al subir la imagen")
       }
 
       const data = await response.json()
-      onImageUploaded(data.image)
 
-      toast({
-        title: "Imagen subida",
-        description: "La imagen se ha subido correctamente.",
-      })
+      // Asegurarse de que tenemos los datos correctos antes de llamar al callback
+      if (data.success && data.image) {
+        onImageUploaded(data.image)
+
+        toast({
+          title: "Imagen subida",
+          description: "La imagen se ha subido correctamente.",
+        })
+      } else {
+        throw new Error("Respuesta inesperada del servidor")
+      }
     } catch (error) {
+      console.error("Error al subir imagen:", error)
       toast({
         title: "Error",
-        description: "No se pudo subir la imagen. Inténtalo de nuevo.",
+        description: error instanceof Error ? error.message : "No se pudo subir la imagen. Inténtalo de nuevo.",
         variant: "destructive",
       })
     } finally {
