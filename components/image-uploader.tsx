@@ -21,6 +21,33 @@ export function ImageUploader({ onImageUploaded, showGalleryOptions = false }: I
   const [tags, setTags] = useState("")
   const { toast } = useToast()
 
+  // Función para probar la conexión con Vercel Blob
+  const testBlobConnection = async () => {
+    try {
+      const response = await fetch("/api/blob-test")
+      const data = await response.json()
+
+      if (data.success) {
+        toast({
+          title: "Conexión exitosa",
+          description: `Conexión con Vercel Blob establecida. Blobs encontrados: ${data.blobCount}`,
+        })
+      } else {
+        toast({
+          title: "Error de conexión",
+          description: data.error || "No se pudo conectar con Vercel Blob",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Error al probar la conexión con Vercel Blob",
+        variant: "destructive",
+      })
+    }
+  }
+
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
 
@@ -51,6 +78,15 @@ export function ImageUploader({ onImageUploaded, showGalleryOptions = false }: I
     setIsUploading(true)
 
     try {
+      // Primero, probar la conexión con Vercel Blob
+      const testResponse = await fetch("/api/blob-test")
+      const testData = await testResponse.json()
+
+      if (!testData.success) {
+        throw new Error(`Error de conexión con Vercel Blob: ${testData.error}`)
+      }
+
+      // Si la conexión es exitosa, proceder con la carga
       const formData = new FormData()
       formData.append("file", file)
 
@@ -59,17 +95,33 @@ export function ImageUploader({ onImageUploaded, showGalleryOptions = false }: I
         formData.append("tags", tags)
       }
 
+      console.log("Enviando solicitud para subir imagen...")
+
       const response = await fetch("/api/images", {
         method: "POST",
         body: formData,
       })
 
+      console.log("Respuesta recibida:", response.status, response.statusText)
+
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || "Error al subir la imagen")
+        const errorText = await response.text()
+        console.error("Texto de error completo:", errorText)
+
+        let errorData
+        try {
+          errorData = JSON.parse(errorText)
+        } catch (e) {
+          throw new Error(
+            `Error del servidor: ${response.status} ${response.statusText}. Texto: ${errorText.substring(0, 100)}...`,
+          )
+        }
+
+        throw new Error(errorData.error || `Error del servidor: ${response.status}`)
       }
 
       const data = await response.json()
+      console.log("Datos de respuesta:", data)
 
       // Asegurarse de que tenemos los datos correctos antes de llamar al callback
       if (data.success && data.image) {
@@ -83,7 +135,7 @@ export function ImageUploader({ onImageUploaded, showGalleryOptions = false }: I
         throw new Error("Respuesta inesperada del servidor")
       }
     } catch (error) {
-      console.error("Error al subir imagen:", error)
+      console.error("Error detallado al subir imagen:", error)
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "No se pudo subir la imagen. Inténtalo de nuevo.",
@@ -141,6 +193,9 @@ export function ImageUploader({ onImageUploaded, showGalleryOptions = false }: I
                 Subir imagen
               </>
             )}
+          </Button>
+          <Button type="button" variant="outline" onClick={testBlobConnection} className="text-xs">
+            Probar conexión
           </Button>
           <span className="text-xs text-gray-500">Formatos: JPG, PNG, GIF. Máx: 5MB</span>
         </div>

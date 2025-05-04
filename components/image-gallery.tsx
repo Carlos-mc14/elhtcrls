@@ -8,7 +8,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/components/ui/use-toast"
 import { ImageUploader } from "@/components/image-uploader"
-import { Search, Trash2, RefreshCw, Check, X } from "lucide-react"
+import { Search, Trash2, RefreshCw, Check, X, AlertCircle } from "lucide-react"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 interface ImageGalleryProps {
   onSelectImage: (imagePath: string) => void
@@ -21,23 +22,51 @@ export function ImageGallery({ onSelectImage, onClose }: ImageGalleryProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const { toast } = useToast()
 
   const fetchImages = async (tab = selectedTab) => {
     setIsLoading(true)
+    setError(null)
+
     try {
       const isPublic = tab === "public" ? "true" : tab === "private" ? "false" : undefined
-      const response = await fetch(`/api/images${isPublic ? `?isPublic=${isPublic}` : ""}`)
+      const url = `/api/images${isPublic ? `?isPublic=${isPublic}` : ""}`
+
+      console.log("Fetching images from:", url)
+
+      const response = await fetch(url)
+
+      console.log("Response status:", response.status, response.statusText)
 
       if (!response.ok) {
-        throw new Error("Error al cargar imágenes")
+        const errorText = await response.text()
+        console.error("Error text:", errorText)
+
+        let errorData
+        try {
+          errorData = JSON.parse(errorText)
+          throw new Error(errorData.error || `Error del servidor: ${response.status}`)
+        } catch (e) {
+          throw new Error(
+            `Error del servidor: ${response.status} ${response.statusText}. Texto: ${errorText.substring(0, 100)}...`,
+          )
+        }
       }
 
       const data = await response.json()
       console.log("Imágenes cargadas:", data.images)
-      setImages(data.images || [])
+
+      if (Array.isArray(data.images)) {
+        setImages(data.images)
+      } else {
+        console.error("Formato de respuesta inesperado:", data)
+        setImages([])
+        setError("Formato de respuesta inesperado")
+      }
     } catch (error) {
       console.error("Error al cargar imágenes:", error)
+      setError(error instanceof Error ? error.message : "Error desconocido al cargar imágenes")
       toast({
         title: "Error",
         description: "No se pudieron cargar las imágenes",
@@ -73,6 +102,8 @@ export function ImageGallery({ onSelectImage, onClose }: ImageGalleryProps) {
       })
 
       if (!response.ok) {
+        const errorText = await response.text()
+        console.error("Error al eliminar imagen:", errorText)
         throw new Error("Error al eliminar imagen")
       }
 
@@ -102,6 +133,8 @@ export function ImageGallery({ onSelectImage, onClose }: ImageGalleryProps) {
       })
 
       if (!response.ok) {
+        const errorText = await response.text()
+        console.error("Error al actualizar imagen:", errorText)
         throw new Error("Error al actualizar imagen")
       }
 
@@ -151,6 +184,14 @@ export function ImageGallery({ onSelectImage, onClose }: ImageGalleryProps) {
       <div className="mb-4">
         <ImageUploader onImageUploaded={handleImageUpload} showGalleryOptions={true} />
       </div>
+
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
       <div className="flex items-center gap-4 mb-4">
         <div className="flex-1">
