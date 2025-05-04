@@ -8,8 +8,18 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/components/ui/use-toast"
 import { ImageUploader } from "@/components/image-uploader"
-import { Search, Trash2, RefreshCw, Check, X, AlertCircle } from "lucide-react"
+import { Search, Trash2, RefreshCw, Check, X, AlertCircle, Lock, Unlock } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 interface ImageGalleryProps {
   onSelectImage: (imagePath: string) => void
@@ -23,6 +33,7 @@ export function ImageGallery({ onSelectImage, onClose }: ImageGalleryProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [imageToDelete, setImageToDelete] = useState<string | null>(null)
   const { toast } = useToast()
 
   const fetchImages = async (tab = selectedTab) => {
@@ -95,9 +106,15 @@ export function ImageGallery({ onSelectImage, onClose }: ImageGalleryProps) {
     })
   }
 
-  const handleDeleteImage = async (id: string) => {
+  const confirmDeleteImage = (id: string) => {
+    setImageToDelete(id)
+  }
+
+  const handleDeleteImage = async () => {
+    if (!imageToDelete) return
+
     try {
-      const response = await fetch(`/api/images/${id}`, {
+      const response = await fetch(`/api/images/${imageToDelete}`, {
         method: "DELETE",
       })
 
@@ -107,7 +124,7 @@ export function ImageGallery({ onSelectImage, onClose }: ImageGalleryProps) {
         throw new Error("Error al eliminar imagen")
       }
 
-      setImages((prev) => prev.filter((img) => img._id !== id))
+      setImages((prev) => prev.filter((img) => img._id !== imageToDelete))
       toast({
         title: "Imagen eliminada",
         description: "La imagen se ha eliminado correctamente",
@@ -119,11 +136,15 @@ export function ImageGallery({ onSelectImage, onClose }: ImageGalleryProps) {
         description: "No se pudo eliminar la imagen",
         variant: "destructive",
       })
+    } finally {
+      setImageToDelete(null)
     }
   }
 
   const handleTogglePublic = async (id: string, isPublic: boolean) => {
     try {
+      console.log(`Cambiando visibilidad de imagen ${id} a ${!isPublic ? "pública" : "privada"}`)
+
       const response = await fetch(`/api/images/${id}`, {
         method: "PUT",
         headers: {
@@ -137,6 +158,9 @@ export function ImageGallery({ onSelectImage, onClose }: ImageGalleryProps) {
         console.error("Error al actualizar imagen:", errorText)
         throw new Error("Error al actualizar imagen")
       }
+
+      const data = await response.json()
+      console.log("Respuesta de actualización:", data)
 
       setImages((prev) => prev.map((img) => (img._id === id ? { ...img, isPublic: !isPublic } : img)))
 
@@ -251,7 +275,11 @@ export function ImageGallery({ onSelectImage, onClose }: ImageGalleryProps) {
                           handleTogglePublic(image._id, image.isPublic)
                         }}
                       >
-                        {image.isPublic ? <span title="Hacer privada">🔓</span> : <span title="Hacer pública">🔒</span>}
+                        {image.isPublic ? (
+                          <Unlock className="h-4 w-4" aria-label="Hacer privada" />
+                        ) : (
+                          <Lock className="h-4 w-4" aria-label="Hacer pública" />
+                        )}
                       </Button>
                       <Button
                         variant="ghost"
@@ -259,7 +287,7 @@ export function ImageGallery({ onSelectImage, onClose }: ImageGalleryProps) {
                         className="text-white hover:text-red-500"
                         onClick={(e) => {
                           e.stopPropagation()
-                          handleDeleteImage(image._id)
+                          confirmDeleteImage(image._id)
                         }}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -287,6 +315,24 @@ export function ImageGallery({ onSelectImage, onClose }: ImageGalleryProps) {
           Seleccionar Imagen
         </Button>
       </div>
+
+      {/* Diálogo de confirmación para eliminar imagen */}
+      <AlertDialog open={!!imageToDelete} onOpenChange={(open) => !open && setImageToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. La imagen será eliminada permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteImage} className="bg-red-600 hover:bg-red-700">
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -40,13 +40,13 @@ export default async function PostsPage({ searchParams }: PostsPageProps) {
       <div className="flex flex-col md:flex-row gap-6 mb-8">
         <div className="w-full md:w-2/3">
           <Suspense fallback={<div>Cargando búsqueda…</div>}>
-  +          <SearchBar defaultValue={search} />
-  +        </Suspense>
+            <SearchBar defaultValue={search} />
+          </Suspense>
         </div>
         <div className="w-full md:w-1/3">
           <Suspense fallback={<div>Cargando filtros…</div>}>
-  +          <TagFilter selectedTag={tag} />
-  +        </Suspense>
+            <TagFilter selectedTag={tag} />
+          </Suspense>
         </div>
       </div>
 

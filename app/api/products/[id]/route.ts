@@ -38,7 +38,8 @@ export async function PUT(req: NextRequest, context: { params: { id: string } })
       return NextResponse.json({ error: "No autorizado" }, { status: 401 })
     }
 
-    const { name, description, price, image, category, stock, facebookUrl, postSlug } = await req.json()
+    const { name, description, price, image, additionalImages, category, stock, facebookUrl, postSlug } =
+      await req.json()
 
     if (!name || !description || !price || !category) {
       return NextResponse.json({ error: "Faltan campos requeridos" }, { status: 400 })
@@ -53,6 +54,7 @@ export async function PUT(req: NextRequest, context: { params: { id: string } })
         description,
         price: Number(price),
         image: image || "/placeholder.svg?height=400&width=400",
+        additionalImages: additionalImages || [],
         category,
         stock: Number(stock) || 0,
         facebookUrl: facebookUrl || "",

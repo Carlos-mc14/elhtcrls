@@ -9,8 +9,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
 import { ImageSelector } from "@/components/image-selector"
-import { Loader2 } from "lucide-react"
+import { Loader2, X, Plus } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import Image from "next/image"
 
 interface Post {
   _id: string
@@ -33,6 +34,7 @@ export function ProductForm({ product, posts = [] }: ProductFormProps) {
     description: "",
     price: "",
     image: "",
+    additionalImages: [] as string[],
     category: "",
     stock: "0",
     facebookUrl: "",
@@ -46,6 +48,7 @@ export function ProductForm({ product, posts = [] }: ProductFormProps) {
         description: product.description || "",
         price: product.price?.toString() || "",
         image: product.image || "",
+        additionalImages: product.additionalImages || [],
         category: product.category || "",
         stock: product.stock?.toString() || "0",
         facebookUrl: product.facebookUrl || "",
@@ -65,6 +68,20 @@ export function ProductForm({ product, posts = [] }: ProductFormProps) {
 
   const handleImageChange = (url: string) => {
     setFormData((prev) => ({ ...prev, image: url }))
+  }
+
+  const handleAddAdditionalImage = (url: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      additionalImages: [...prev.additionalImages, url],
+    }))
+  }
+
+  const handleRemoveAdditionalImage = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      additionalImages: prev.additionalImages.filter((_, i) => i !== index),
+    }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -246,8 +263,59 @@ export function ProductForm({ product, posts = [] }: ProductFormProps) {
         </div>
 
         <div className="md:col-span-2">
+          <label className="block text-sm font-medium mb-1">
+            Imagen Principal <span className="text-red-500">*</span>
+          </label>
           <ImageSelector value={formData.image} onChange={handleImageChange} label="Imagen del Producto" />
           {formData.image && <p className="mt-1 text-xs text-gray-500">URL de imagen: {formData.image}</p>}
+        </div>
+
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium mb-1">Imágenes Adicionales</label>
+          <div className="mb-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => document.getElementById("additional-image-selector")?.click()}
+              className="w-full border-dashed border-2 py-8"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Añadir imagen adicional
+            </Button>
+            <div className="hidden">
+              <ImageSelector
+                value=""
+                onChange={handleAddAdditionalImage}
+                label="Imagen Adicional"
+              />
+            </div>
+          </div>
+
+          {formData.additionalImages.length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+              {formData.additionalImages.map((imageUrl, index) => (
+                <div key={index} className="relative group">
+                  <div className="relative h-24 w-full rounded-md overflow-hidden">
+                    <Image
+                      src={imageUrl || "/placeholder.svg"}
+                      alt={`Imagen adicional ${index + 1}`}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => handleRemoveAdditionalImage(index)}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div>
