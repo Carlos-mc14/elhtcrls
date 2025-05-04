@@ -3,41 +3,26 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { connectToDatabase } from "@/lib/mongodb"
 import { Image } from "@/lib/models/image"
-import { unlink } from "fs/promises"
-import path from "path"
+import { put } from "@vercel/blob"
+import { nanoid } from "nanoid"
 
-export async function GET(req: NextRequest, context: { params: { id: string } }) {
-  // Esperar a que params se resuelva
-  const params = await context.params
-  const id = params.id
+// Función para limpiar el nombre del archivo para SEO
+function cleanFilename(filename: string): string {
+  // Eliminar la extensión
+  const name = filename.substring(0, filename.lastIndexOf("."))
+  const extension = filename.substring(filename.lastIndexOf("."))
 
-  try {
-    await connectToDatabase()
+  // Reemplazar caracteres no alfanuméricos con guiones
+  const cleanName = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "-")
+    .replace(/-+/g, "-") // Reemplazar múltiples guiones con uno solo
+    .replace(/^-|-$/g, "") // Eliminar guiones al principio y al final
 
-    const image = await Image.findById(id).lean() as { isPublic: boolean; user: { toString: () => string }; [key: string]: any } | null
-
-    if (!image) {
-      return NextResponse.json({ error: "Imagen no encontrada" }, { status: 404 })
-    }
-
-    // Verificar si la imagen es pública o pertenece al usuario
-    const session = await getServerSession(authOptions)
-    if (!image.isPublic && (!session || image.user.toString() !== session.user.id)) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 403 })
-    }
-
-    return NextResponse.json({ image })
-  } catch (error) {
-    console.error("Error al obtener imagen:", error)
-    return NextResponse.json({ error: "Error al obtener imagen" }, { status: 500 })
-  }
+  return cleanName + extension
 }
 
-export async function PUT(req: NextRequest, context: { params: { id: string } }) {
-  // Esperar a que params se resuelva
-  const params = await context.params
-  const id = params.id
-
+export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
 
@@ -45,43 +30,84 @@ export async function PUT(req: NextRequest, context: { params: { id: string } })
       return NextResponse.json({ error: "No autorizado" }, { status: 401 })
     }
 
+    const formData = await req.formData()
+    const file = formData.get("file") as File
+    const isPublic = formData.get("isPublic") === "true"
+    const tags = formData.get("tags") ? (formData.get("tags") as string).split(",") : []
+
+    if (!file) {
+      return NextResponse.json({ error: "No se ha proporcionado ningún archivo" }, { status: 400 })
+    }
+
+    // Validar tipo de archivo
+    const fileType = file.type
+    if (!fileType.startsWith("image/")) {
+      return NextResponse.json({ error: "Solo se permiten archivos de imagen" }, { status: 400 })
+    }
+
+    // Limpiar el nombre del archivo para SEO
+    const cleanedFilename = cleanFilename(file.name)
+
+    // Generar un nombre único basado en el nombre limpio
+    const uniqueId = nanoid(8)
+    const extension = cleanedFilename.substring(cleanedFilename.lastIndexOf("."))
+    const nameWithoutExtension = cleanedFilename.substring(0, cleanedFilename.lastIndexOf("."))
+    const filename = `${nameWithoutExtension}-${uniqueId}${extension}`
+
+    // Carpeta virtual para organizar las imágenes por usuario
+    const userFolder = `users/${session.user.id}`
+    const blobPath = `${userFolder}/${filename}`
+
+    // Subir a Vercel Blob
+    const blob = await put(blobPath, file, {
+      access: "public",
+    })
+
+    // Conectar a la base de datos
     await connectToDatabase()
 
-    const image = await Image.findById(id)
+    // No podemos obtener las dimensiones de la imagen en el servidor sin bibliotecas adicionales
+    // Simplemente usaremos valores predeterminados
+    const width = 0
+    const height = 0
 
-    if (!image) {
-      return NextResponse.json({ error: "Imagen no encontrada" }, { status: 404 })
-    }
+    // Guardar información de la imagen en la base de datos
+    const imageDoc = new Image({
+      filename,
+      originalName: file.name,
+      path: blob.url, // Usar la URL de Vercel Blob
+      size: file.size,
+      mimetype: file.type,
+      user: session.user.id,
+      isPublic,
+      width,
+      height,
+      tags,
+      blobUrl: blob.url, // Guardar la URL del blob para referencia
+    })
 
-    // Verificar si la imagen pertenece al usuario
-    if (image.user.toString() !== session.user.id && session.user.role !== "admin") {
-      return NextResponse.json({ error: "No autorizado" }, { status: 403 })
-    }
+    await imageDoc.save()
 
-    const { isPublic, tags } = await req.json()
-
-    if (typeof isPublic === "boolean") {
-      image.isPublic = isPublic
-    }
-
-    if (tags && Array.isArray(tags)) {
-      image.tags = tags
-    }
-
-    await image.save()
-
-    return NextResponse.json({ image })
+    return NextResponse.json({
+      success: true,
+      image: {
+        _id: imageDoc._id,
+        path: blob.url,
+        filename,
+        isPublic,
+        width,
+        height,
+        tags,
+        createdAt: imageDoc.createdAt,
+      },
+    })
   } catch (error) {
-    console.error("Error al actualizar imagen:", error)
-    return NextResponse.json({ error: "Error al actualizar imagen" }, { status: 500 })
+    console.error("Error al subir imagen:", error)
+    return NextResponse.json({ error: "Error al subir imagen" }, { status: 500 })
   }
 }
 
-export async function DELETE(req: NextRequest, context: { params: { id: string } }) {
-  // Esperar a que params se resuelva
-  const params = await context.params
-  const id = params.id
-
+export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
 
@@ -89,34 +115,34 @@ export async function DELETE(req: NextRequest, context: { params: { id: string }
       return NextResponse.json({ error: "No autorizado" }, { status: 401 })
     }
 
+    const { searchParams } = new URL(req.url)
+    const isPublic = searchParams.get("isPublic")
+    const tag = searchParams.get("tag")
+
     await connectToDatabase()
 
-    const image = await Image.findById(id)
+    const query: any = {}
 
-    if (!image) {
-      return NextResponse.json({ error: "Imagen no encontrada" }, { status: 404 })
+    // Si se solicitan imágenes públicas, mostrar todas las públicas
+    // Si se solicitan imágenes privadas, mostrar solo las del usuario
+    if (isPublic === "true") {
+      query.isPublic = true
+    } else if (isPublic === "false") {
+      query.user = session.user.id
+    } else {
+      // Si no se especifica, mostrar las públicas y las propias del usuario
+      query.$or = [{ isPublic: true }, { user: session.user.id }]
     }
 
-    // Verificar si la imagen pertenece al usuario o es admin
-    if (image.user.toString() !== session.user.id && session.user.role !== "admin") {
-      return NextResponse.json({ error: "No autorizado" }, { status: 403 })
+    if (tag) {
+      query.tags = tag
     }
 
-    // Eliminar el archivo físico
-    try {
-      const filePath = path.join(process.cwd(), "public", image.path.substring(1))
-      await unlink(filePath)
-    } catch (error) {
-      console.error("Error al eliminar archivo físico:", error)
-      // Continuamos incluso si no se puede eliminar el archivo físico
-    }
+    const images = await Image.find(query).sort({ createdAt: -1 }).lean()
 
-    // Eliminar el registro de la base de datos
-    await Image.findByIdAndDelete(id)
-
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ images })
   } catch (error) {
-    console.error("Error al eliminar imagen:", error)
-    return NextResponse.json({ error: "Error al eliminar imagen" }, { status: 500 })
+    console.error("Error al obtener imágenes:", error)
+    return NextResponse.json({ error: "Error al obtener imágenes" }, { status: 500 })
   }
 }

@@ -1,6 +1,23 @@
-import mongoose from "mongoose"
+import mongoose, { type Document, Schema } from "mongoose"
 
-const imageSchema = new mongoose.Schema(
+// Definir una interfaz para el documento de imagen
+export interface IImage extends Document {
+  filename: string
+  originalName: string
+  path: string
+  size: number
+  mimetype: string
+  user: mongoose.Types.ObjectId
+  isPublic: boolean
+  width: number
+  height: number
+  tags: string[]
+  blobUrl?: string
+  createdAt: Date
+  updatedAt: Date
+}
+
+const imageSchema = new Schema<IImage>(
   {
     filename: {
       type: String,
@@ -23,7 +40,7 @@ const imageSchema = new mongoose.Schema(
       required: true,
     },
     user: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
@@ -43,8 +60,12 @@ const imageSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    blobUrl: {
+      type: String,
+      default: "",
+    },
   },
   { timestamps: true },
 )
 
-export const Image = mongoose.models.Image || mongoose.model("Image", imageSchema)
+export const Image = mongoose.models.Image || mongoose.model<IImage>("Image", imageSchema)

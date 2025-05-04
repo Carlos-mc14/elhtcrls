@@ -3,18 +3,8 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { connectToDatabase } from "@/lib/mongodb"
 import { Image } from "@/lib/models/image"
-import { writeFile, mkdir, access } from "fs/promises"
-import path from "path"
-import sharp from "sharp"
-
-// Función para asegurar que el directorio existe
-async function ensureDir(dirPath: string) {
-  try {
-    await mkdir(dirPath, { recursive: true })
-  } catch (error) {
-    console.error("Error creating directory:", error)
-  }
-}
+import { put } from "@vercel/blob"
+import { nanoid } from "nanoid"
 
 // Función para limpiar el nombre del archivo para SEO
 function cleanFilename(filename: string): string {
@@ -30,32 +20,6 @@ function cleanFilename(filename: string): string {
     .replace(/^-|-$/g, "") // Eliminar guiones al principio y al final
 
   return cleanName + extension
-}
-
-// Función para verificar si un archivo existe
-async function fileExists(filePath: string): Promise<boolean> {
-  try {
-    await access(filePath)
-    return true
-  } catch {
-    return false
-  }
-}
-
-// Función para generar un nombre único si ya existe
-async function getUniqueFilename(basePath: string, filename: string): Promise<string> {
-  const name = filename.substring(0, filename.lastIndexOf("."))
-  const extension = filename.substring(filename.lastIndexOf("."))
-
-  let uniqueFilename = filename
-  let counter = 1
-
-  while (await fileExists(path.join(basePath, uniqueFilename))) {
-    uniqueFilename = `${name}(${counter})${extension}`
-    counter++
-  }
-
-  return uniqueFilename
 }
 
 export async function POST(req: NextRequest) {
@@ -81,64 +45,74 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Solo se permiten archivos de imagen" }, { status: 400 })
     }
 
-    // Crear directorios para imágenes
-    const publicDir = path.join(process.cwd(), "public")
-    const uploadsDir = path.join(publicDir, "uploads")
-    const userDir = path.join(uploadsDir, session.user.id)
-
-    await ensureDir(userDir)
-
     // Limpiar el nombre del archivo para SEO
     const cleanedFilename = cleanFilename(file.name)
 
-    // Verificar si ya existe y obtener un nombre único
-    const uniqueFilename = await getUniqueFilename(userDir, cleanedFilename)
+    // Generar un nombre único basado en el nombre limpio
+    const uniqueId = nanoid(8)
+    const extension = cleanedFilename.substring(cleanedFilename.lastIndexOf("."))
+    const nameWithoutExtension = cleanedFilename.substring(0, cleanedFilename.lastIndexOf("."))
+    const filename = `${nameWithoutExtension}-${uniqueId}${extension}`
 
-    // Ruta completa del archivo
-    const filePath = path.join(userDir, uniqueFilename)
+    // Carpeta virtual para organizar las imágenes por usuario
+    const userFolder = `users/${session.user.id}`
+    const blobPath = `${userFolder}/${filename}`
 
-    // Convertir el archivo a un Buffer
-    const buffer = Buffer.from(await file.arrayBuffer())
-
-    // Procesar la imagen con sharp para obtener dimensiones
-    const imageInfo = await sharp(buffer).metadata()
-
-    // Guardar el archivo en el sistema de archivos
-    await writeFile(filePath, buffer)
-
-    // Ruta relativa para acceder desde la web
-    const relativePath = `/uploads/${session.user.id}/${uniqueFilename}`
+    // Subir a Vercel Blob
+    const blob = await put(blobPath, file, {
+      access: "public",
+    })
 
     // Conectar a la base de datos
     await connectToDatabase()
 
+    // Obtener dimensiones de la imagen (opcional)
+    let width = 0
+    let height = 0
+
+    try {
+      // Crear una imagen temporal para obtener dimensiones
+      const img = new Image()
+      img.src = URL.createObjectURL(file)
+      await new Promise((resolve) => {
+        img.onload = () => {
+          width = img.width
+          height = img.height
+          resolve(null)
+        }
+      })
+    } catch (error) {
+      console.error("Error al obtener dimensiones de la imagen:", error)
+    }
+
     // Guardar información de la imagen en la base de datos
-    const image = new Image({
-      filename: uniqueFilename,
+    const imageDoc = new Image({
+      filename,
       originalName: file.name,
-      path: relativePath,
+      path: blob.url, // Usar la URL de Vercel Blob
       size: file.size,
       mimetype: file.type,
       user: session.user.id,
       isPublic,
-      width: imageInfo.width || 0,
-      height: imageInfo.height || 0,
+      width: width || 0,
+      height: height || 0,
       tags,
+      blobUrl: blob.url, // Guardar la URL del blob para referencia
     })
 
-    await image.save()
+    await imageDoc.save()
 
     return NextResponse.json({
       success: true,
       image: {
-        _id: image._id,
-        path: relativePath,
-        filename: uniqueFilename,
+        _id: imageDoc._id,
+        path: blob.url,
+        filename,
         isPublic,
-        width: imageInfo.width,
-        height: imageInfo.height,
+        width: width || 0,
+        height: height || 0,
         tags,
-        createdAt: image.createdAt,
+        createdAt: imageDoc.createdAt,
       },
     })
   } catch (error) {

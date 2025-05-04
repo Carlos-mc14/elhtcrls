@@ -19,13 +19,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No se ha proporcionado ningún archivo" }, { status: 400 })
     }
 
-    // Validate file type
+    // Validar tipo de archivo
     const fileType = file.type
     if (!fileType.startsWith("image/")) {
       return NextResponse.json({ error: "Solo se permiten archivos de imagen" }, { status: 400 })
     }
 
-    // Generate a unique filename
+    // Generar un nombre de archivo único
     const uniqueId = nanoid()
     const extension = file.name.split(".").pop()
     const filename = `${uniqueId}.${extension}`
