@@ -11,7 +11,7 @@ interface EditPostPageProps {
 }
 
 export default async function EditPostPage({ params }: EditPostPageProps) {
-  const id = await params.id
+  const { id } = params
   const session = await getServerSession(authOptions)
   const post = await getPostById(id)
 

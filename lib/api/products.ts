@@ -36,14 +36,16 @@ function convertMongoIds(obj: any): any {
   return obj
 }
 
-export const getProducts = cache(async () => {
-  await connectToDatabase()
-
-  const products = await Product.find().sort({ createdAt: -1 }).lean()
-
-  // Convertir los IDs de MongoDB a strings
-  return convertMongoIds(products)
-})
+export const getProducts = cache(async ({ page = 1, limit = 8 } = {}) => {
+  await connectToDatabase();
+  const skip = (page - 1) * limit;
+  const products = await Product.find()
+                     .sort({ createdAt: -1 })
+                     .skip(skip)
+                     .limit(limit)
+                     .lean();
+  return convertMongoIds(products);
+});
 
 export const getProductById = cache(async (id: string) => {
   try {

@@ -9,6 +9,7 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import type { Metadata } from "next"
 import type { Post } from "@/types/post"
+import DOMPurify from 'isomorphic-dompurify';
 
 interface PostPageProps {
   params: {
@@ -89,7 +90,10 @@ export default async function PostPage({ params }: PostPageProps) {
           />
         </div>
 
-        <div className="prose prose-green max-w-none mb-12" dangerouslySetInnerHTML={{ __html: post.content || "" }} />
+        <div 
+          className="prose prose-green max-w-none mb-12" 
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content || "") }} 
+        />
 
         <AlternatingDiary entries={post.diaryEntries || []} postId={post._id.toString()} isAuthor={isAuthor} />
 
