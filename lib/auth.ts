@@ -5,9 +5,10 @@ import { User } from "./models/user"
 import bcrypt from "bcryptjs"
 import { MongoDBAdapter } from "@auth/mongodb-adapter"
 import clientPromise from "./mongodb-client"
+import { decode, encode } from "next-auth/jwt"
 
 export const authOptions: NextAuthOptions = {
-  adapter: MongoDBAdapter(clientPromise) as unknown as import("next-auth/adapters").Adapter,
+  adapter: MongoDBAdapter(clientPromise) as any, // Temporary workaround for type mismatch
   providers: [
     CredentialsProvider({
       name: "credentials",
@@ -51,6 +52,27 @@ export const authOptions: NextAuthOptions = {
   ],
   session: {
     strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 días
+  },
+  jwt: {
+    encode: async ({ token, secret, maxAge }) => {
+      return encode({ token, secret, maxAge })
+    },
+    decode: async ({ token, secret }) => {
+      return decode({ token, secret })
+    },
+  },
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 30 * 24 * 60 * 60, // 30 días
+      },
+    },
   },
   callbacks: {
     async jwt({ token, user }) {

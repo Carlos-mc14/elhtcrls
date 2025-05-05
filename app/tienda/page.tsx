@@ -1,6 +1,8 @@
 import { getProducts } from "@/lib/api/products"
 import { ProductCard } from "@/components/product-card"
 import { LocationBanner } from "@/components/location-banner"
+import { PaginationControl } from "@/components/pagination-control"
+import { Suspense } from "react"
 
 // Definir la interfaz para el producto
 interface Product {
@@ -9,14 +11,29 @@ interface Product {
   description: string
   price: number
   image: string
+  additionalImages?: string[]
   category: string
   stock: number
   facebookUrl: string
   postSlug?: string
 }
 
-export default async function StorePage() {
-  const products = (await getProducts()) as Product[]
+interface PageProps {
+  searchParams: { page?: string }
+}
+
+export default async function StorePage({ searchParams }: PageProps) {
+  const currentPage = Number(searchParams.page) || 1
+  const productsPerPage = 8
+  const allProducts = (await getProducts()) as Product[]
+
+  // Calculamos el total de páginas
+  const totalPages = Math.ceil(allProducts.length / productsPerPage)
+
+  // Obtenemos los productos para esta página
+  const startIndex = (currentPage - 1) * productsPerPage
+  const endIndex = startIndex + productsPerPage
+  const productsToDisplay = allProducts.slice(startIndex, endIndex)
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -25,11 +42,17 @@ export default async function StorePage() {
 
       <LocationBanner />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {products.map((product) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {productsToDisplay.map((product) => (
           <ProductCard key={product._id} product={product} />
         ))}
       </div>
+
+      {totalPages > 1 && (
+        <Suspense fallback={<div className="flex justify-center py-4">Cargando...</div>}>
+          <PaginationControl currentPage={currentPage} totalPages={totalPages} />
+        </Suspense>
+      )}
     </div>
   )
 }

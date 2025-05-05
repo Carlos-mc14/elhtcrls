@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -28,6 +28,7 @@ export function ProductForm({ product, posts = [] }: ProductFormProps) {
   const router = useRouter()
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const imagePickerRef = useRef<HTMLDivElement>(null)
 
   const [formData, setFormData] = useState({
     name: "",
@@ -39,6 +40,14 @@ export function ProductForm({ product, posts = [] }: ProductFormProps) {
     stock: "0",
     facebookUrl: "",
     postSlug: "",
+  })
+
+  const [formErrors, setFormErrors] = useState({
+    name: false,
+    description: false,
+    price: false,
+    image: false,
+    category: false,
   })
 
   useEffect(() => {
@@ -60,21 +69,44 @@ export function ProductForm({ product, posts = [] }: ProductFormProps) {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
+
+    // Limpiar el error cuando el usuario empieza a escribir
+    if (formErrors[name as keyof typeof formErrors]) {
+      setFormErrors((prev) => ({ ...prev, [name]: false }))
+    }
   }
 
   const handleSelectChange = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }))
+
+    // Limpiar el error cuando el usuario selecciona algo
+    if (formErrors[name as keyof typeof formErrors]) {
+      setFormErrors((prev) => ({ ...prev, [name]: false }))
+    }
   }
 
   const handleImageChange = (url: string) => {
     setFormData((prev) => ({ ...prev, image: url }))
+
+    // Limpiar el error cuando el usuario selecciona una imagen
+    if (formErrors.image) {
+      setFormErrors((prev) => ({ ...prev, image: false }))
+    }
   }
 
   const handleAddAdditionalImage = (url: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      additionalImages: [...prev.additionalImages, url],
-    }))
+    if (url) {
+      setFormData((prev) => ({
+        ...prev,
+        additionalImages: [...prev.additionalImages, url],
+      }))
+
+      // Mostrar mensaje de confirmación
+      toast({
+        title: "Imagen añadida",
+        description: "La imagen adicional se ha añadido correctamente.",
+      })
+    }
   }
 
   const handleRemoveAdditionalImage = (index: number) => {
@@ -84,35 +116,26 @@ export function ProductForm({ product, posts = [] }: ProductFormProps) {
     }))
   }
 
+  const validateForm = () => {
+    const errors = {
+      name: !formData.name.trim(),
+      description: !formData.description.trim(),
+      price: !formData.price || isNaN(Number(formData.price)) || Number(formData.price) <= 0,
+      image: !formData.image,
+      category: !formData.category,
+    }
+
+    setFormErrors(errors)
+    return !Object.values(errors).some((error) => error)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!formData.name || !formData.description || !formData.price || !formData.category) {
+    if (!validateForm()) {
       toast({
         title: "Campos requeridos",
-        description: "Por favor, completa todos los campos obligatorios.",
-        variant: "destructive",
-      })
-      return
-    }
-
-    // Validar que el precio sea un número válido
-    const price = Number.parseFloat(formData.price)
-    if (isNaN(price) || price <= 0) {
-      toast({
-        title: "Precio inválido",
-        description: "Por favor, ingresa un precio válido mayor que cero.",
-        variant: "destructive",
-      })
-      return
-    }
-
-    // Validar que el stock sea un número entero válido
-    const stock = Number.parseInt(formData.stock)
-    if (isNaN(stock) || stock < 0) {
-      toast({
-        title: "Stock inválido",
-        description: "Por favor, ingresa un valor de stock válido (0 o mayor).",
+        description: "Por favor, completa todos los campos obligatorios correctamente.",
         variant: "destructive",
       })
       return
@@ -131,8 +154,9 @@ export function ProductForm({ product, posts = [] }: ProductFormProps) {
         },
         body: JSON.stringify({
           ...formData,
-          price: price,
-          stock: stock,
+          price: Number(formData.price),
+          stock: Number(formData.stock || 0),
+          postSlug: formData.postSlug === "none" ? "" : formData.postSlug,
         }),
       })
 
@@ -179,6 +203,17 @@ export function ProductForm({ product, posts = [] }: ProductFormProps) {
     "Fertilizantes",
   ]
 
+  const openImageSelector = () => {
+    // Acceder al componente ImageSelector mediante ref y disparar un clic en él
+    const imageSelectorElement = document.getElementById("additional-image-selector")
+    if (imageSelectorElement) {
+      const button = imageSelectorElement.querySelector("button")
+      if (button) {
+        button.click()
+      }
+    }
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2">
@@ -192,16 +227,25 @@ export function ProductForm({ product, posts = [] }: ProductFormProps) {
             value={formData.name}
             onChange={handleChange}
             placeholder="Nombre del producto"
-            required
+            className={formErrors.name ? "border-red-500" : ""}
           />
+          {formErrors.name && <p className="text-red-500 text-sm mt-1">Este campo es obligatorio</p>}
         </div>
 
         <div>
           <label htmlFor="category" className="block text-sm font-medium mb-1">
             Categoría <span className="text-red-500">*</span>
           </label>
-          <Select value={formData.category} onValueChange={(value) => handleSelectChange("category", value)}>
-            <SelectTrigger>
+          <Select
+            value={formData.category}
+            onValueChange={(value) => handleSelectChange("category", value)}
+            onOpenChange={() => {
+              if (formErrors.category) {
+                setFormErrors((prev) => ({ ...prev, category: false }))
+              }
+            }}
+          >
+            <SelectTrigger className={formErrors.category ? "border-red-500" : ""}>
               <SelectValue placeholder="Seleccionar categoría" />
             </SelectTrigger>
             <SelectContent>
@@ -212,6 +256,7 @@ export function ProductForm({ product, posts = [] }: ProductFormProps) {
               ))}
             </SelectContent>
           </Select>
+          {formErrors.category && <p className="text-red-500 text-sm mt-1">Este campo es obligatorio</p>}
         </div>
 
         <div>
@@ -227,8 +272,9 @@ export function ProductForm({ product, posts = [] }: ProductFormProps) {
             value={formData.price}
             onChange={handleChange}
             placeholder="0.00"
-            required
+            className={formErrors.price ? "border-red-500" : ""}
           />
+          {formErrors.price && <p className="text-red-500 text-sm mt-1">Ingrese un precio válido mayor que cero</p>}
         </div>
 
         <div>
@@ -257,9 +303,9 @@ export function ProductForm({ product, posts = [] }: ProductFormProps) {
             value={formData.description}
             onChange={handleChange}
             placeholder="Descripción del producto"
-            className="h-24"
-            required
+            className={`h-24 ${formErrors.description ? "border-red-500" : ""}`}
           />
+          {formErrors.description && <p className="text-red-500 text-sm mt-1">Este campo es obligatorio</p>}
         </div>
 
         <div className="md:col-span-2">
@@ -267,22 +313,36 @@ export function ProductForm({ product, posts = [] }: ProductFormProps) {
             Imagen Principal <span className="text-red-500">*</span>
           </label>
           <ImageSelector value={formData.image} onChange={handleImageChange} label="Imagen del Producto" />
-          {formData.image && <p className="mt-1 text-xs text-gray-500">URL de imagen: {formData.image}</p>}
+          {formData.image ? (
+            <div className="mt-2">
+              <div className="relative w-full h-32 rounded overflow-hidden border">
+                <Image
+                  src={formData.image || "/placeholder.svg"}
+                  alt="Imagen principal"
+                  fill
+                  className="object-cover"
+                />
+              </div>
+              <p className="mt-1 text-xs text-gray-500">URL de imagen: {formData.image}</p>
+            </div>
+          ) : formErrors.image ? (
+            <p className="text-red-500 text-sm mt-1">La imagen principal es obligatoria</p>
+          ) : null}
         </div>
 
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium mb-1">Imágenes Adicionales</label>
+          <label className="block text-sm font-medium mb-1">Imágenes Adicionales (Opcional)</label>
           <div className="mb-2">
             <Button
               type="button"
               variant="outline"
-              onClick={() => document.getElementById("additional-image-selector")?.click()}
+              onClick={openImageSelector}
               className="w-full border-dashed border-2 py-8"
             >
               <Plus className="mr-2 h-4 w-4" />
               Añadir imagen adicional
             </Button>
-            <div className="hidden">
+            <div className="hidden" ref={imagePickerRef}>
               <ImageSelector
                 value=""
                 onChange={handleAddAdditionalImage}
