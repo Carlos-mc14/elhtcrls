@@ -23,7 +23,8 @@ interface PageProps {
 }
 
 export default async function StorePage({ searchParams }: PageProps) {
-  const currentPage = Number(searchParams.page) || 1
+  const resolvedSearchParams = await searchParams
+  const currentPage = Number(resolvedSearchParams.page) || 1
   const productsPerPage = 8
   const allProducts = (await getProducts()) as Product[]
 

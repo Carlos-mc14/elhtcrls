@@ -24,7 +24,8 @@ export default async function EditProductPage({ params }: EditProductPageProps) 
   const posts = await getPosts()
 
   try {
-    const product = await Product.findById(params.id).lean()
+    const id = await params.id
+    const product = await Product.findById(id).lean()
 
     if (!product) {
       notFound()
