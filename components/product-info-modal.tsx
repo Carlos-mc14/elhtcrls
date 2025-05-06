@@ -136,7 +136,7 @@ export function ProductInfoModal({ product, isOpen, onClose }: ProductInfoModalP
             </Button>
           )}
 
-          <Button variant="ghost" onClick={onClose} className="w-full bg-green-600  hover:bg-green-700 text-white hover:text-white">
+          <Button variant="ghost" onClick={onClose} className="w-full">
             Cerrar
           </Button>
         </DialogFooter>

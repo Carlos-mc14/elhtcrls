@@ -10,9 +10,9 @@ interface PostsPageProps {
 }
 
 export default async function PostsPage({ searchParams }: PostsPageProps) {
-  const pageParam = searchParams.page;
-  const searchParam = searchParams.q;
-  const tagParam   = searchParams.tag;
+  const pageParam = await searchParams.page;
+  const searchParam = await searchParams.q;
+  const tagParam = await searchParams.tag;
 
   const page = Number(pageParam) || 1;
   const search = searchParam || "";
