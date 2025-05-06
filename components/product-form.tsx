@@ -312,14 +312,6 @@ export function ProductForm({ product, posts = [] }: ProductFormProps) {
           <ImageSelector value={formData.image} onChange={handleImageChange} label="Imagen del Producto" />
           {formData.image ? (
             <div className="mt-2">
-              <div className="relative w-full h-32 rounded overflow-hidden border">
-                <Image
-                  src={formData.image || "/placeholder.svg"}
-                  alt="Imagen principal"
-                  fill
-                  className="object-contain"
-                />
-              </div>
               <p className="mt-1 text-xs text-gray-500">URL de imagen: {formData.image}</p>
             </div>
           ) : formErrors.image ? (

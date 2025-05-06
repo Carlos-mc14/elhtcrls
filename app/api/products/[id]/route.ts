@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache"
 import { serializeDocument } from "@/lib/utils"
 
 export async function GET(req: NextRequest, context: { params: { id: string } }) {
-  const { id } = context.params
+  const { id } = await context.params
 
   try {
     await connectToDatabase()
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest, context: { params: { id: string } })
 }
 
 export async function PUT(req: NextRequest, context: { params: { id: string } }) {
-  const { id } = context.params
+  const { id } = await context.params
 
   try {
     const session = await getServerSession(authOptions)
@@ -79,7 +79,7 @@ export async function PUT(req: NextRequest, context: { params: { id: string } })
 }
 
 export async function DELETE(req: NextRequest, context: { params: { id: string } }) {
-  const { id } = context.params
+  const { id } = await  context.params
 
   try {
     const session = await getServerSession(authOptions)

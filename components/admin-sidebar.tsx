@@ -59,8 +59,8 @@ export function AdminSidebar() {
       <div className="flex flex-col h-full">
         <div className="p-4 border-b flex items-center justify-between">
           {!collapsed && (
-            <Link href="/" className="font-bold text-xl text-green-700">
-              ElHuertoDeCarlos
+            <Link href="/" className="font-bold text-xl text-lime-800">
+              Panel de Control
             </Link>
           )}
           <Button variant="ghost" size="icon" onClick={() => setCollapsed(!collapsed)} className="ml-auto">

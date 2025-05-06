@@ -31,7 +31,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
   return (
     <>
-      <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
+      <Card className="flex flex-col h-full overflow-hidden hover:shadow-lg transition-shadow duration-300">
         <div className="relative h-48">
           <Image
             src={product.image || "/placeholder.svg?height=200&width=400"}
@@ -39,24 +39,32 @@ export function ProductCard({ product }: ProductCardProps) {
             fill
             className="object-contain"
           />
+          
+          <Badge
+            variant={product.stock > 0 ? "outline" : "destructive"}
+            className={`absolute top-2 right-2 text-xs px-2 py-1 ${product.stock > 0 ? "border-leaf-medium text-leaf-dark" : ""}`}
+          >
+            {product.stock > 0 ? `${product.stock} en stock` : "Agotado"}
+          </Badge>
         </div>
-        <CardContent className="p-4">
+
+        {/* 1. flex-1 para que este bloque crezca y empuje el footer */}
+        <CardContent className="p-4 flex-1">
           <div className="flex justify-between items-start mb-2">
             <h3 className="font-bold text-lg">{product.name}</h3>
-            <div className="text-lg font-bold text-leaf-dark">S/ {product.price.toFixed(2)}</div>
+            <div className="text-lg font-bold text-leaf-dark">
+              S/ {product.price.toFixed(2)}
+            </div>
           </div>
-          <p className="text-sm text-gray-600 mb-3 line-clamp-2">{product.description}</p>
+          <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+            {product.description}
+          </p>
 
-          <div className="flex justify-between items-center">
-            <Badge
-              variant={product.stock > 0 ? "outline" : "destructive"}
-              className={product.stock > 0 ? "border-leaf-medium text-leaf-dark" : ""}
-            >
-              {product.stock > 0 ? `${product.stock} en stock` : "Agotado"}
-            </Badge>
-          </div>
+          
         </CardContent>
-        <CardFooter className="p-4 pt-0 flex flex-col gap-2">
+
+        {/* 2. mt-auto para pegarlo abajo */}
+        <CardFooter className="p-4 pt-0 flex flex-col gap-2 mt-auto">
           <Button
             variant="default"
             className="w-full bg-green-600 hover:bg-green-700 text-white"
@@ -76,7 +84,11 @@ export function ProductCard({ product }: ProductCardProps) {
           )}
 
           {product.postSlug && (
-            <Button variant="outline" className="w-full border-leaf-light hover:bg-leaf-light/10" asChild>
+            <Button
+              variant="outline"
+              className="w-full border-leaf-light hover:bg-leaf-light/10"
+              asChild
+            >
               <Link href={`/posts/${product.postSlug}`}>
                 <Info className="mr-2 h-4 w-4" />
                 Más información

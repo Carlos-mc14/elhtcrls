@@ -13,7 +13,7 @@ interface ImageSelectorProps {
   label?: string
 }
 
-export function ImageSelector({ value, onChange, label = "Imagen" }: ImageSelectorProps) {
+export function ImageSelector({ value, onChange}: ImageSelectorProps) {
   const [isGalleryOpen, setIsGalleryOpen] = useState(false)
   const [imageUrl, setImageUrl] = useState(value || "")
 
@@ -47,13 +47,13 @@ export function ImageSelector({ value, onChange, label = "Imagen" }: ImageSelect
   }
 
   return (
-    <div className="space-y-2">
-      <label className="block text-sm font-medium">{label}</label>
+    <div className="space-y-2 bg-white p-4 rounded-md border border-gray-300">
+      <label className="block text-sm font-medium"></label>
 
       {imageUrl ? (
         <div className="relative">
           <div className="relative h-48 w-full rounded-md overflow-hidden">
-            <Image src={getDisplayImageUrl(imageUrl) || "/placeholder.svg"} alt={label} fill className="object-cover" />
+            <Image src={getDisplayImageUrl(imageUrl) || "/placeholder.svg"} alt="" fill className="object-contain" />
           </div>
           <div className="absolute top-2 right-2 flex gap-2">
             <Button
