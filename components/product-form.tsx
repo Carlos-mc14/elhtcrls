@@ -204,13 +204,10 @@ export function ProductForm({ product, posts = [] }: ProductFormProps) {
   ]
 
   const openImageSelector = () => {
-    // Acceder al componente ImageSelector mediante ref y disparar un clic en él
-    const imageSelectorElement = document.getElementById("additional-image-selector")
-    if (imageSelectorElement) {
-      const button = imageSelectorElement.querySelector("button")
-      if (button) {
-        button.click()
-      }
+    const el = imagePickerRef.current
+    if (el) {
+      const btn = el.querySelector("button")
+      btn?.click()
     }
   }
 
@@ -320,7 +317,7 @@ export function ProductForm({ product, posts = [] }: ProductFormProps) {
                   src={formData.image || "/placeholder.svg"}
                   alt="Imagen principal"
                   fill
-                  className="object-cover"
+                  className="object-contain"
                 />
               </div>
               <p className="mt-1 text-xs text-gray-500">URL de imagen: {formData.image}</p>
@@ -360,7 +357,7 @@ export function ProductForm({ product, posts = [] }: ProductFormProps) {
                       src={imageUrl || "/placeholder.svg"}
                       alt={`Imagen adicional ${index + 1}`}
                       fill
-                      className="object-cover"
+                      className="object-contain"
                     />
                   </div>
                   <Button

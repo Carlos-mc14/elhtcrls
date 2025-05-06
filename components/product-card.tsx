@@ -37,7 +37,7 @@ export function ProductCard({ product }: ProductCardProps) {
             src={product.image || "/placeholder.svg?height=200&width=400"}
             alt={product.name}
             fill
-            className="object-cover"
+            className="object-contain"
           />
         </div>
         <CardContent className="p-4">

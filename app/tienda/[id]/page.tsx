@@ -57,7 +57,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             src={product.image || "/placeholder.svg?height=400&width=600"}
             alt={product.name}
             fill
-            className="object-cover"
+            className="object-contain"
             priority
           />
         </div>
