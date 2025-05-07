@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import {
@@ -34,9 +34,45 @@ interface ProductInfoModalProps {
 
 export function ProductInfoModal({ product, isOpen, onClose }: ProductInfoModalProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [isHovering, setIsHovering] = useState(false)
+  const carouselRef = useRef<HTMLDivElement>(null)
+  const observerRef = useRef<IntersectionObserver | null>(null)
+  const [isInView, setIsInView] = useState(false)
 
   // Combinar imagen principal con imágenes adicionales
   const allImages = [product.image, ...(product.additionalImages || [])]
+
+  // Configurar IntersectionObserver cuando el modal está abierto
+  useEffect(() => {
+    if (!isOpen || !carouselRef.current || allImages.length <= 1) return
+    
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0]
+        setIsInView(entry.isIntersecting)
+      },
+      { threshold: 0.7 } // Cuando el 70% del elemento está visible
+    )
+    
+    observerRef.current.observe(carouselRef.current)
+    
+    return () => {
+      if (observerRef.current && carouselRef.current) {
+        observerRef.current.unobserve(carouselRef.current)
+      }
+    }
+  }, [isOpen, allImages.length])
+  
+  // Efecto para cambiar imágenes solo cuando está en hover o view
+  useEffect(() => {
+    if (!isOpen || allImages.length <= 1 || (!isHovering && !isInView)) return
+    
+    const intervalId = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev === allImages.length - 1 ? 0 : prev + 1))
+    }, 3000)
+    
+    return () => clearInterval(intervalId)
+  }, [isOpen, allImages.length, isHovering, isInView])
 
   const handlePrevImage = () => {
     setCurrentImageIndex((prev) => (prev === 0 ? allImages.length - 1 : prev - 1))
@@ -56,44 +92,91 @@ export function ProductInfoModal({ product, isOpen, onClose }: ProductInfoModalP
           </DialogDescription>
         </DialogHeader>
 
-        {/* Carousel de imágenes */}
-        <div className="relative mt-4 mb-6">
+        {/* Carousel de imágenes mejorado */}
+        <div 
+          ref={carouselRef}
+          className="relative mt-4 mb-6" 
+          onMouseEnter={() => setIsHovering(true)}
+          onMouseLeave={() => setIsHovering(false)}
+        >
           <div className="relative h-64 w-full rounded-md overflow-hidden">
-            <Image
-              src={allImages[currentImageIndex] || "/placeholder.svg?height=400&width=600"}
-              alt={`${product.name} - Imagen ${currentImageIndex + 1}`}
-              fill
-              className="object-contain"
-            />
+            {allImages.map((img, idx) => (
+              <Image
+                key={idx}
+                src={img || "/placeholder.svg?height=400&width=600"}
+                alt={`${product.name} - Imagen ${idx + 1}`}
+                fill
+                className={`object-contain transform transition-all duration-700 ease-in-out ${
+                  idx === currentImageIndex 
+                    ? "opacity-100 scale-100" 
+                    : "opacity-0 scale-95 absolute"
+                }`}
+                priority={idx === currentImageIndex}
+              />
+            ))}
           </div>
 
           {allImages.length > 1 && (
             <>
-              <Button
-                variant="outline"
-                size="icon"
-                className="absolute left-2 top-1/2 transform -translate-y-1/2 rounded-full bg-white/80 hover:bg-white"
-                onClick={handlePrevImage}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 rounded-full bg-white/80 hover:bg-white"
-                onClick={handleNextImage}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+              <div className={`absolute inset-0 flex items-center justify-between px-2 transition-opacity duration-300 ${
+                isHovering ? "opacity-100" : "opacity-0"
+              }`}>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="rounded-full bg-white/80 hover:bg-white shadow-md transform transition-transform hover:scale-110"
+                  onClick={handlePrevImage}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="rounded-full bg-white/80 hover:bg-white shadow-md transform transition-transform hover:scale-110"
+                  onClick={handleNextImage}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
 
-              {/* Indicadores de imágenes */}
-              <div className="flex justify-center gap-1 mt-2">
+              {/* Indicadores de imágenes con animación */}
+              <div className={`flex justify-center gap-1 mt-2 transition-opacity duration-300 ${
+                isHovering || isInView ? "opacity-100" : "opacity-50"
+              }`}>
                 {allImages.map((_, index) => (
                   <button
                     key={index}
-                    className={`h-2 w-2 rounded-full ${index === currentImageIndex ? "bg-green-600" : "bg-gray-300"}`}
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      index === currentImageIndex 
+                        ? "bg-green-600 w-6" 
+                        : "bg-gray-300 w-2 hover:bg-gray-400"
+                    }`}
                     onClick={() => setCurrentImageIndex(index)}
                   />
+                ))}
+              </div>
+
+              {/* Miniaturas de imágenes con hover effect */}
+              <div className="flex overflow-x-auto gap-2 mt-2 pb-2">
+                {allImages.map((img, idx) => (
+                  <button
+                    key={idx}
+                    className={`relative h-16 w-16 flex-shrink-0 rounded-md overflow-hidden transition-all duration-300 ${
+                      idx === currentImageIndex 
+                        ? "border-2 border-green-600 shadow-md" 
+                        : "border border-gray-200 opacity-70 hover:opacity-100"
+                    }`}
+                    onClick={() => setCurrentImageIndex(idx)}
+                  >
+                    <Image 
+                      src={img || "/placeholder.svg?height=100&width=100"} 
+                      alt={`Miniatura ${idx + 1}`}
+                      fill
+                      className={`object-cover transition-transform duration-500 ${
+                        isHovering && idx === currentImageIndex ? "scale-110" : "scale-100"
+                      }`}
+                    />
+                  </button>
                 ))}
               </div>
             </>

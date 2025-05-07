@@ -15,7 +15,8 @@ interface ProductPageProps {
 }
 
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
-  const product = await getProductById(params.id)
+  const id = await params.id
+  const product = await getProductById(id)
 
   if (!product) {
     return {
@@ -34,7 +35,8 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
-  const product = await getProductById(params.id)
+  const id = await params.id
+  const product = await getProductById(id)
 
   if (!product) {
     notFound()
@@ -84,8 +86,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
           <div className="flex flex-col sm:flex-row gap-4 pt-4">
             <Button className="bg-green-600 hover:bg-green-700 flex-1" disabled={product.stock <= 0}>
-              <ShoppingCart className="mr-2 h-4 w-4" />
-              Añadir al carrito
+              Ver información
             </Button>
 
             {product.facebookUrl && (
