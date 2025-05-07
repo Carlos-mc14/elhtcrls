@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, FileText, Users, Settings, ShoppingBag, ChevronLeft, ChevronRight } from "lucide-react"
+import { LayoutDashboard, FileText, Users, ShoppingBag, ChevronLeft, ChevronRight } from "lucide-react"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 
@@ -40,12 +40,6 @@ export function AdminSidebar() {
             title: "Usuarios",
             href: "/admin/users",
             icon: <Users className="h-5 w-5" />,
-            exact: false,
-          },
-          {
-            title: "Configuración",
-            href: "/admin/settings",
-            icon: <Settings className="h-5 w-5" />,
             exact: false,
           },
         ]

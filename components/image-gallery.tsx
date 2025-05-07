@@ -234,20 +234,34 @@ export function ImageGallery({ onSelectImage, onClose }: ImageGalleryProps) {
         </Button>
       </div>
 
-      <Tabs defaultValue="all" className="flex-1 flex flex-col" onValueChange={handleTabChange}>
+      <Tabs 
+        defaultValue="all" 
+        className="flex flex-col" 
+        onValueChange={handleTabChange}
+        style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, minHeight: 0 }}
+      >
         <TabsList className="mb-4">
           <TabsTrigger value="all">Todas</TabsTrigger>
           <TabsTrigger value="public">Públicas</TabsTrigger>
           <TabsTrigger value="private">Mis Imágenes</TabsTrigger>
         </TabsList>
 
-        <div className="flex-1 overflow-y-auto">
+        {/* El contenedor con scroll - usando tanto style inline como className para asegurar que funcione */}
+        <div 
+          className="overflow-y-auto"
+          style={{ 
+            flexGrow: 1, 
+            minHeight: 0,
+            maxHeight: 'calc(80vh - 300px)', /* Altura aproximada restando header, footer y otros elementos */
+            overflowY: 'auto'
+          }}
+        >
           {isLoading ? (
-            <div className="flex justify-center items-center h-64">
+            <div className="flex justify-center items-center h-32">
               <RefreshCw className="h-8 w-8 animate-spin text-green-600" />
             </div>
           ) : filteredImages.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-4">
               {filteredImages.map((image) => (
                 <div
                   key={image._id}

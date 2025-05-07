@@ -97,7 +97,7 @@ export function UsersTable({ users }: UsersTableProps) {
 
   return (
     <>
-      <div className="rounded-md border">
+      <div className="rounded-md border border-gray-400 shadow-sm overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>

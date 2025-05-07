@@ -29,3 +29,6 @@ next-env.d.ts
 # Zip & Rar Files
 *.zip
 *.rar
+
+# todo
+todo
