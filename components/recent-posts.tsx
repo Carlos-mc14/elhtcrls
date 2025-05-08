@@ -8,7 +8,9 @@ import { authOptions } from "@/lib/auth"
 
 export async function RecentPosts() {
   const session = await getServerSession(authOptions)
-  const posts = await getPostsForAdmin(session?.user.id, session?.user.role === "admin")
+  const posts = session?.user.id
+    ? await getPostsForAdmin(session.user.id, session.user.role === "admin")
+    : []
 
   return (
     <Card>
