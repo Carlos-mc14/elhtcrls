@@ -141,8 +141,8 @@ export function HeroSection() {
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.4 }}
             >
-              Aprende a cultivar tus propias plantas, comparte tus experiencias y conecta con otros amantes de la
-              jardinería en nuestra comunidad.
+              Aprende a cultivar y cuidar tus plantas de manera orgánica y sostenible.  
+              También puedes leer nuestros artículos sobre jardinería, huertos y mucho más.
             </motion.p>
             <motion.div
               className="flex flex-col gap-2 min-[400px]:flex-row"
@@ -178,13 +178,13 @@ export function HeroSection() {
             transition={{ duration: 0.5, delay: 0.3 }}
           >
             <motion.div
-              className="absolute inset-0 bg-gradient-to-r from-leaf-dark/20 to-leaf-medium/20 z-10 rounded-lg"
+              className="absolute inset-0 bg-gradient-to-r rounded-lg"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.6 }}
             />
             <Image
-              src="/logo-with-default-bg.png?height=500&width=500"
+              src="/orquidea.jpg?height=500&width=500"
               alt="Plantas en crecimiento en un huerto"
               fill
               className="object-cover rounded-lg"
