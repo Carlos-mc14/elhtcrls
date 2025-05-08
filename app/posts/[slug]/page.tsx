@@ -9,7 +9,8 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import type { Metadata } from "next"
 import type { Post } from "@/types/post"
-import DOMPurify from 'isomorphic-dompurify';
+import ReactMarkdown from "react-markdown"
+import rehypeSanitize from "rehype-sanitize"
 
 interface PostPageProps {
   params: {
@@ -79,7 +80,7 @@ export default async function PostPage({ params }: PostPageProps) {
           </div>
           <PostTags tags={post.tags || []} />
         </div>
-
+  
         <div className="relative w-full h-96 mb-8 rounded-lg overflow-hidden">
           <Image
             src={getImageUrl(post.coverImage) || "/placeholder.svg"}
@@ -89,14 +90,15 @@ export default async function PostPage({ params }: PostPageProps) {
             priority
           />
         </div>
-
-        <div 
-          className="prose prose-green max-w-none mb-12" 
-          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content || "") }} 
-        />
-
+  
+        <div className="prose prose-green max-w-none mb-12">
+          <ReactMarkdown rehypePlugins={[rehypeSanitize]}>
+            {post.content || ""}
+          </ReactMarkdown>
+        </div>
+  
         <AlternatingDiary entries={post.diaryEntries || []} postId={post._id.toString()} isAuthor={isAuthor} />
-
+  
         <CommentSection postId={post._id.toString()} comments={post.comments || []} />
       </article>
     </div>
