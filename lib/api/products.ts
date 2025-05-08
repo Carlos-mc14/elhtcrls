@@ -36,16 +36,63 @@ function convertMongoIds(obj: any): any {
   return obj
 }
 
-export const getProducts = cache(async ({ page = 1, limit = 8 } = {}) => {
+// Opción 1: Cargar todos los productos de una vez (para catálogos pequeños a medianos)
+export const getProducts = cache(async () => {
   await connectToDatabase();
-  const skip = (page - 1) * limit;
   const products = await Product.find()
                      .sort({ createdAt: -1 })
-                     .skip(skip)
-                     .limit(limit)
                      .lean();
   return convertMongoIds(products);
 });
+
+// Opción 2: Mantener paginación en el servidor (para catálogos muy grandes)
+// export const getProducts = cache(async ({ 
+//   page = 1, 
+//   limit = 50, // Aumentamos el límite por defecto
+//   search = "",
+//   category = ""
+// } = {}) => {
+//   await connectToDatabase();
+//   
+//   // Construir el filtro
+//   const filter: any = {};
+//   
+//   // Añadir filtro de búsqueda si existe
+//   if (search) {
+//     filter.$or = [
+//       { name: { $regex: search, $options: 'i' } },
+//       { description: { $regex: search, $options: 'i' } }
+//     ];
+//   }
+//   
+//   // Añadir filtro de categoría si existe
+//   if (category && category !== "all") {
+//     filter.category = category;
+//   }
+//   
+//   // Calcular el salto para la paginación
+//   const skip = (page - 1) * limit;
+//   
+//   // Obtener productos con filtros
+//   const products = await Product.find(filter)
+//                      .sort({ createdAt: -1 })
+//                      .skip(skip)
+//                      .limit(limit)
+//                      .lean();
+//   
+//   // Obtener conteo total para la paginación
+//   const total = await Product.countDocuments(filter);
+//   
+//   return {
+//     products: convertMongoIds(products),
+//     pagination: {
+//       total,
+//       pages: Math.ceil(total / limit),
+//       page,
+//       limit
+//     }
+//   };
+// });
 
 export const getProductById = cache(async (id: string) => {
   try {
@@ -71,6 +118,27 @@ export const getProductsByCategory = cache(async (category: string) => {
     return convertMongoIds(products)
   } catch (error) {
     console.error("Error al obtener productos por categoría:", error)
+    return []
+  }
+})
+
+// Nueva función para buscar productos (útil si necesitamos operaciones de búsqueda en el servidor)
+export const searchProducts = cache(async (query: string) => {
+  try {
+    await connectToDatabase()
+
+    const products = await Product.find({
+      $or: [
+        { name: { $regex: query, $options: 'i' } },
+        { description: { $regex: query, $options: 'i' } }
+      ]
+    })
+    .sort({ createdAt: -1 })
+    .lean()
+
+    return convertMongoIds(products)
+  } catch (error) {
+    console.error("Error al buscar productos:", error)
     return []
   }
 })
