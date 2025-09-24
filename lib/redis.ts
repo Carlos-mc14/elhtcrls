@@ -2,8 +2,8 @@ import { Redis } from "@upstash/redis"
 
 // Crear una instancia de Redis
 const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL || "",
-  token: process.env.UPSTASH_REDIS_REST_TOKEN || "",
+  url: process.env.UPSTASH_REDIS_REST_URL,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN 
 })
 
 // Función para verificar si Redis está disponible
