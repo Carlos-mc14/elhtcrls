@@ -6,9 +6,9 @@ import { Calendar, Clock, Users, DollarSign, ChefHat, ArrowRight } from "lucide-
 import Link from "next/link"
 import Image from "next/image"
 
-// Forzar renderizado dinámico
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+export const fetchCache = 'force-no-store'
 
 export default async function EventsPage() {
   try {

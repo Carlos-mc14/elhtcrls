@@ -5,6 +5,10 @@ import { TagFilter } from "@/components/tag-filter"
 import { Pagination } from "@/components/pagination"
 import { Suspense } from "react"
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+export const fetchCache = 'force-no-store'
+
 interface PostsPageProps {
   searchParams: { page?: string, q?: string, tag?: string }
 }
