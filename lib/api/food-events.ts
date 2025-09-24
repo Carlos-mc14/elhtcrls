@@ -3,10 +3,6 @@ import type { FoodEvent, CreateFoodEventData } from "@/types/food-event"
 const API_BASE = "/api/food-events"
 
 function getBaseUrl() {
-  if (typeof window !== "undefined") {
-    // Client-side
-    return ""
-  }
   // Server-side
   return process.env.NEXT_PUBLIC_BASE_URL
 }
