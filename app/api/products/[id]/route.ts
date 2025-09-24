@@ -56,7 +56,6 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
       price,
       image,
       additionalImages,
-      category,
       stock,
       facebookUrl,
       postSlug,
@@ -64,7 +63,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
       tagStock,
     } = await req.json()
 
-    if (!name || !description || !price || !category) {
+    if (!name || !description || !price) {
       return NextResponse.json(
         { error: "Faltan campos requeridos (name, description, price, category)" },
         { status: 400 },
@@ -81,7 +80,6 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
         price: Number(price),
         image: image || "/placeholder.svg?height=400&width=400",
         additionalImages: additionalImages || [],
-        category, // Agregar category
         stock: Number(stock) || 0,
         facebookUrl: facebookUrl || "",
         postSlug: postSlug || "",

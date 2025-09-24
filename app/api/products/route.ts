@@ -24,10 +24,9 @@ export async function GET(req: NextRequest) {
     const limit = searchParams.get("limit")
     const sortBy = searchParams.get("sortBy") || "newest"
     const search = searchParams.get("search")
-    const category = searchParams.get("category")
     const tags = searchParams.get("tags")
 
-    console.log("Search params:", { limit, sortBy, search, category, tags }) // Debug
+    console.log("Search params:", { limit, sortBy, search, tags }) // Debug
 
     // Construir el query de filtros
     const query: any = {}
@@ -39,16 +38,11 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    if (category) {
-      query.category = { $regex: category, $options: "i" }
-    }
-
     // Filtro por búsqueda
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: "i" } },
-        { description: { $regex: search, $options: "i" } },
-        { category: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } }
       ]
     }
 
@@ -124,7 +118,6 @@ export async function POST(req: NextRequest) {
       price,
       image,
       additionalImages,
-      category,
       stock,
       facebookUrl,
       postSlug,
@@ -132,9 +125,9 @@ export async function POST(req: NextRequest) {
       tagStock,
     } = await req.json()
 
-    console.log("Product data received:", { name, category, price, stock }) // Debug
+    console.log("Product data received:", { name, price, stock }) // Debug
 
-    if (!name || !description || !price || !category) {
+    if (!name || !description || !price) {
       return NextResponse.json(
         { error: "Faltan campos requeridos (name, description, price, category)" },
         { status: 400 },
@@ -149,7 +142,6 @@ export async function POST(req: NextRequest) {
       price: Number(price),
       image: image || "/placeholder.svg?height=400&width=400",
       additionalImages: additionalImages || [],
-      category,
       stock: Number(stock) || 0,
       facebookUrl: facebookUrl || "",
       postSlug: postSlug || "",

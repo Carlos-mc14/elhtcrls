@@ -15,7 +15,6 @@ interface PageProps {
   searchParams: {
     page?: string
     search?: string
-    category?: string
     sortBy?: string
     tags?: string
   }
@@ -30,7 +29,6 @@ export default async function StorePage({ searchParams }: PageProps) {
 
   const allProducts = (await getProducts({
     search: resolvedSearchParams.search,
-    category: resolvedSearchParams.category,
     sortBy: resolvedSearchParams.sortBy as any,
     tags: selectedTags.length > 0 ? selectedTags : undefined,
   })) as Product[]

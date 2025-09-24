@@ -7,7 +7,6 @@ export interface ProductDoc extends Document {
   price: number
   image: string
   additionalImages: string[]
-  category: string
   stock: number
   facebookUrl: string
   postSlug: string
@@ -41,10 +40,6 @@ const productSchema = new mongoose.Schema(
     additionalImages: {
       type: [String],
       default: [],
-    },
-    category: {
-      type: String,
-      required: true,
     },
     stock: {
       type: Number,

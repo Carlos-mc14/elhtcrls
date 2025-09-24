@@ -25,7 +25,6 @@ interface Product {
   price: number
   image: string
   additionalImages?: string[]
-  category: string
   stock: number
   facebookUrl: string
   postSlug?: string
@@ -37,7 +36,6 @@ interface Post {
   title: string
   excerpt?: string
   image?: string
-  category?: string
   readTime?: string
   likes?: number
   slug: string
@@ -310,9 +308,6 @@ export function HomeContent({ products: initialProducts, posts, totalProducts }:
                     )}
                   </div>
                   <CardContent className="p-4">
-                    <Badge variant="secondary" className="mb-2 text-xs">
-                      {product.category}
-                    </Badge>
                     <h3 className="font-semibold text-gray-900 mb-2 group-hover:text-green-600 transition-colors line-clamp-2">
                       {product.name}
                     </h3>

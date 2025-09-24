@@ -7,7 +7,6 @@ export interface Product {
   price: number
   image: string
   additionalImages: string[]
-  category: string
   stock: number
   facebookUrl?: string
   postSlug?: string

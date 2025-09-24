@@ -4,19 +4,17 @@ import { buildApiUrl } from "@/lib/utils/api-utils"
 interface GetProductsOptions {
   limit?: number
   sortBy?: "newest" | "oldest" | "price-asc" | "price-desc" | "name"
-  category?: string
   search?: string
   tags?: string[] // Array de IDs de etiquetas
 }
 
 export async function getProducts(options: GetProductsOptions = {}): Promise<Product[]> {
   try {
-    const { limit, sortBy = "newest", category, search, tags } = options
+    const { limit, sortBy = "newest", search, tags } = options
 
     const searchParams = new URLSearchParams()
     if (limit != null) searchParams.append("limit", String(limit))
     if (sortBy) searchParams.append("sortBy", sortBy)
-    if (category) searchParams.append("category", category)
     if (search) searchParams.append("search", search)
     if (tags && tags.length > 0) {
       searchParams.append("tags", tags.join(","))
@@ -69,10 +67,6 @@ export async function getLatestProducts(limit = 8): Promise<Product[]> {
 
 export async function getFeaturedProducts(limit = 4): Promise<Product[]> {
   return getProducts({ limit, sortBy: "newest" })
-}
-
-export async function getProductsByCategory(category: string, limit?: number): Promise<Product[]> {
-  return getProducts({ category, limit, sortBy: "newest" })
 }
 
 // Función para obtener productos por etiquetas
