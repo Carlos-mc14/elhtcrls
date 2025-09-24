@@ -9,7 +9,13 @@ const redis = new Redis({
 // Función para verificar si Redis está disponible
 export async function isRedisAvailable(): Promise<boolean> {
   try {
-    await redis.ping()
+    // Usar un timeout para evitar esperas largas
+    const pingPromise = redis.ping()
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Redis timeout')), 2000)
+    )
+    
+    await Promise.race([pingPromise, timeoutPromise])
     return true
   } catch (error) {
     console.warn("Redis no está disponible:", error)
@@ -24,11 +30,11 @@ export async function fetchWithCache<T>(
   ttl: number = 60 * 60, // 1 hora por defecto
 ): Promise<T> {
   try {
-    // Verificar si Redis está disponible
+    // Verificar si Redis está disponible con timeout
     const redisAvailable = await isRedisAvailable()
 
     if (!redisAvailable) {
-      // Si Redis no está disponible, obtener datos directamente
+      console.log(`Redis no disponible, obteniendo datos directamente: ${key}`)
       return await fetchFn()
     }
 
@@ -44,16 +50,26 @@ export async function fetchWithCache<T>(
     console.log(`Obteniendo datos frescos: ${key}`)
     const freshData = await fetchFn()
 
-    // Guardar en caché para futuras solicitudes
-    if (freshData) {
-      await redis.set(key, freshData, { ex: ttl })
+    // Guardar en caché para futuras solicitudes (solo si hay datos)
+    if (freshData !== null && freshData !== undefined) {
+      try {
+        await redis.set(key, freshData, { ex: ttl })
+      } catch (cacheError) {
+        console.warn(`Error al guardar en caché ${key}:`, cacheError)
+        // No fallar la función por error de caché
+      }
     }
 
     return freshData
   } catch (error) {
     console.error(`Error en fetchWithCache para clave ${key}:`, error)
     // En caso de error con Redis, obtener datos directamente
-    return await fetchFn()
+    try {
+      return await fetchFn()
+    } catch (fetchError) {
+      console.error(`Error al obtener datos frescos para ${key}:`, fetchError)
+      throw fetchError
+    }
   }
 }
 
@@ -64,6 +80,8 @@ export async function invalidateCache(key: string): Promise<void> {
     if (redisAvailable) {
       await redis.del(key)
       console.log(`Caché invalidada: ${key}`)
+    } else {
+      console.log(`Redis no disponible, no se puede invalidar: ${key}`)
     }
   } catch (error) {
     console.error(`Error al invalidar caché para clave ${key}:`, error)
@@ -81,7 +99,11 @@ export async function invalidateCachePattern(pattern: string): Promise<void> {
           await redis.del(key)
         }
         console.log(`Caché invalidada para patrón ${pattern}: ${keys.length} claves`)
+      } else {
+        console.log(`No se encontraron claves para el patrón: ${pattern}`)
       }
+    } else {
+      console.log(`Redis no disponible, no se puede invalidar patrón: ${pattern}`)
     }
   } catch (error) {
     console.error(`Error al invalidar caché para patrón ${pattern}:`, error)
