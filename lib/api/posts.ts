@@ -1,4 +1,3 @@
-import { cache } from "react"
 import { connectToDatabase } from "@/lib/mongodb"
 import { Post } from "@/lib/models/post"
 import { invalidateCache, invalidateCachePattern } from "@/lib/redis"
@@ -48,12 +47,7 @@ function getPostsCacheKey(params: any = {}) {
   return `posts:list:page=${page}:limit=${limit}:search=${search}:tag=${tag}`
 }
 
-export const getPosts = cache(async ({ page = 1, limit = 10, search = "", tag = "", withPagination = false } = {}) => {
-  // const cacheKey = getPostsCacheKey({ page, limit, search, tag })
-
-  // return fetchWithCache(
-  //   cacheKey,
-  //   async () => {
+export const getPosts = async ({ page = 1, limit = 10, search = "", tag = "", withPagination = false } = {}) => {
   try {
     await connectToDatabase()
 
@@ -92,17 +86,9 @@ export const getPosts = cache(async ({ page = 1, limit = 10, search = "", tag = 
     console.error("Error fetching posts:", error)
     return withPagination ? { posts: [], totalPages: 0, currentPage: page } : []
   }
-  //   },
-  //   60 * 5, // TTL: 5 minutos
-  // )
-})
+}
 
-export const getPostBySlug = cache(async (slug: string) => {
-  // const cacheKey = `posts:slug:${slug}`
-
-  // return fetchWithCache(
-  //   cacheKey,
-  //   async () => {
+export const getPostBySlug = async (slug: string) => {
   try {
     await connectToDatabase()
 
@@ -122,17 +108,9 @@ export const getPostBySlug = cache(async (slug: string) => {
     console.error("Error fetching post by slug:", error)
     return null
   }
-  //   },
-  //   60 * 10, // TTL: 10 minutos
-  // )
-})
+}
 
-export const getPostById = cache(async (id: string) => {
-  // const cacheKey = `posts:id:${id}`
-
-  // return fetchWithCache(
-  //   cacheKey,
-  //   async () => {
+export const getPostById = async (id: string) => {
   try {
     await connectToDatabase()
 
@@ -143,17 +121,9 @@ export const getPostById = cache(async (id: string) => {
     console.error("Error fetching post by id:", error)
     return null
   }
-  //   },
-  //   60 * 10, // TTL: 10 minutos
-  // )
-})
+}
 
-export const getPostsForAdmin = cache(async (userId: string, isAdmin: boolean) => {
-  // const cacheKey = `posts:admin:${userId}:${isAdmin}`
-
-  // return fetchWithCache(
-  //   cacheKey,
-  //   async () => {
+export const getPostsForAdmin = async (userId: string, isAdmin: boolean) => {
   try {
     await connectToDatabase()
 
@@ -170,10 +140,7 @@ export const getPostsForAdmin = cache(async (userId: string, isAdmin: boolean) =
     console.error("Error fetching posts for admin:", error)
     return []
   }
-  //   },
-  //   60 * 2, // TTL: 2 minutos (más corto para datos administrativos)
-  // )
-})
+}
 
 // Función para invalidar caché después de modificaciones
 export async function invalidatePostsCache(postId?: string, slug?: string) {
