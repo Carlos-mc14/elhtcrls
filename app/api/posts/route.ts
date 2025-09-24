@@ -1,7 +1,3 @@
-export const dynamic = "force-dynamic"
-export const revalidate = 0
-export const fetchCache = "force-no-store"
-
 import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
@@ -10,7 +6,7 @@ import { Post } from "@/lib/models/post"
 import { revalidatePath } from "next/cache"
 import slugify from "slugify"
 import { invalidatePostsCache } from "@/lib/api/posts"
-import { serializeDocument } from "@/lib/utils" // Importar serializeDocument
+import { serializeDocument } from "@/lib/utils"
 import mongoose from "mongoose"
 
 export async function POST(req: NextRequest) {
@@ -46,31 +42,39 @@ export async function POST(req: NextRequest) {
       title,
       slug,
       content,
-      excerpt,
-      tags,
-      coverImage,
-      author: authorId, // Asignar el ID del autor correctamente
+      excerpt: excerpt || "", // Asegurar que excerpt no sea undefined
+      tags: tags || [],       // Asegurar que tags no sea undefined
+      coverImage: coverImage || "",
+      author: authorId,
       diaryEntries: [],
       comments: [],
     })
 
-    await post.save()
+    // Guardar primero
+    const savedPost = await post.save()
 
-    await post.populate("author", "name image")
+    // Hacer populate en una consulta separada para asegurar que funcione
+    const populatedPost = await Post.findById(savedPost._id)
+      .populate("author", "name image")
+      .lean()
 
-    // Invalidar caché
-    await invalidatePostsCache(post._id.toString(), post.slug)
+    // Invalidar cache DESPUÉS de crear el post
+    await invalidatePostsCache(savedPost._id.toString(), savedPost.slug)
 
+    // Invalidar más rutas para asegurar que se actualice la UI
     revalidatePath("/")
     revalidatePath("/posts")
     revalidatePath("/admin/posts")
 
-    const serializedPost = serializeDocument(post)
+    const serializedPost = serializeDocument(populatedPost)
 
     return NextResponse.json({ post: serializedPost }, { status: 201 })
   } catch (error) {
     console.error("Error al crear post:", error)
-    return NextResponse.json({ error: "Error al crear la publicación" }, { status: 500 })
+    return NextResponse.json({ 
+      error: "Error al crear la publicación",
+      details: error instanceof Error ? error.message : "Error desconocido"
+    }, { status: 500 })
   }
 }
 
@@ -87,7 +91,10 @@ export async function GET(req: NextRequest) {
     const query: any = {}
 
     if (search) {
-      query.$or = [{ title: { $regex: search, $options: "i" } }, { content: { $regex: search, $options: "i" } }]
+      query.$or = [
+        { title: { $regex: search, $options: "i" } }, 
+        { content: { $regex: search, $options: "i" } }
+      ]
     }
 
     if (tag) {
@@ -96,6 +103,7 @@ export async function GET(req: NextRequest) {
 
     const skip = (page - 1) * limit
 
+    // Usar lean() para mejor performance y asegurar serialización
     const posts = await Post.find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -111,10 +119,13 @@ export async function GET(req: NextRequest) {
       posts: serializedPosts,
       totalPages: Math.ceil(total / limit),
       currentPage: page,
-      total, // Agregar total para consistencia
+      total,
     })
   } catch (error) {
     console.error("Error al obtener posts:", error)
-    return NextResponse.json({ error: "Error al obtener publicaciones" }, { status: 500 })
+    return NextResponse.json({ 
+      error: "Error al obtener publicaciones",
+      details: error instanceof Error ? error.message : "Error desconocido"
+    }, { status: 500 })
   }
 }
