@@ -23,7 +23,7 @@ export async function getProducts(options: GetProductsOptions = {}): Promise<Pro
     }
 
     const response = await fetch(buildApiUrl("/api/products", searchParams), {
-      next: { revalidate: 3600 }, // Cache por 1 hora
+      cache: "no-store", // Cambiar de next: { revalidate: 3600 } a no-store
     })
 
     if (!response.ok) {
@@ -45,7 +45,7 @@ export async function getProducts(options: GetProductsOptions = {}): Promise<Pro
 export async function getProduct(id: string): Promise<Product | null> {
   try {
     const response = await fetch(buildApiUrl(`/api/products/${encodeURIComponent(id)}`), {
-      next: { revalidate: 3600 },
+      cache: "no-store", // Cambiar de next: { revalidate: 3600 } a no-store
     })
 
     if (!response.ok) {

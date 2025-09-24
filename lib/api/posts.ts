@@ -1,7 +1,7 @@
 import { cache } from "react"
 import { connectToDatabase } from "@/lib/mongodb"
 import { Post } from "@/lib/models/post"
-import { fetchWithCache, invalidateCache, invalidateCachePattern } from "@/lib/redis"
+import { invalidateCache, invalidateCachePattern } from "@/lib/redis"
 import { serializeDocument } from "@/lib/utils"
 
 // Función auxiliar para convertir _id de MongoDB a string y manejar fechas
@@ -49,130 +49,130 @@ function getPostsCacheKey(params: any = {}) {
 }
 
 export const getPosts = cache(async ({ page = 1, limit = 10, search = "", tag = "", withPagination = false } = {}) => {
-  const cacheKey = getPostsCacheKey({ page, limit, search, tag })
+  // const cacheKey = getPostsCacheKey({ page, limit, search, tag })
 
-  return fetchWithCache(
-    cacheKey,
-    async () => {
-      try {
-        await connectToDatabase()
+  // return fetchWithCache(
+  //   cacheKey,
+  //   async () => {
+  try {
+    await connectToDatabase()
 
-        const query: any = {}
+    const query: any = {}
 
-        if (search) {
-          query.$or = [{ title: { $regex: search, $options: "i" } }, { content: { $regex: search, $options: "i" } }]
-        }
+    if (search) {
+      query.$or = [{ title: { $regex: search, $options: "i" } }, { content: { $regex: search, $options: "i" } }]
+    }
 
-        if (tag) {
-          query.tags = tag
-        }
+    if (tag) {
+      query.tags = tag
+    }
 
-        const skip = (page - 1) * limit
+    const skip = (page - 1) * limit
 
-        const posts = await Post.find(query)
-          .sort({ createdAt: -1 })
-          .skip(skip)
-          .limit(limit)
-          .populate("author", "name image")
-          .lean()
+    const posts = await Post.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate("author", "name image")
+      .lean()
 
-        const serializedPosts = serializeDocument(posts)
+    const serializedPosts = serializeDocument(posts)
 
-        if (withPagination) {
-          const total = await Post.countDocuments(query)
-          return {
-            posts: serializedPosts,
-            totalPages: Math.ceil(total / limit),
-            currentPage: page,
-          }
-        }
-
-        return serializedPosts
-      } catch (error) {
-        console.error("Error fetching posts:", error)
-        return withPagination ? { posts: [], totalPages: 0, currentPage: page } : []
+    if (withPagination) {
+      const total = await Post.countDocuments(query)
+      return {
+        posts: serializedPosts,
+        totalPages: Math.ceil(total / limit),
+        currentPage: page,
       }
-    },
-    60 * 5, // TTL: 5 minutos
-  )
+    }
+
+    return serializedPosts
+  } catch (error) {
+    console.error("Error fetching posts:", error)
+    return withPagination ? { posts: [], totalPages: 0, currentPage: page } : []
+  }
+  //   },
+  //   60 * 5, // TTL: 5 minutos
+  // )
 })
 
 export const getPostBySlug = cache(async (slug: string) => {
-  const cacheKey = `posts:slug:${slug}`
+  // const cacheKey = `posts:slug:${slug}`
 
-  return fetchWithCache(
-    cacheKey,
-    async () => {
-      try {
-        await connectToDatabase()
+  // return fetchWithCache(
+  //   cacheKey,
+  //   async () => {
+  try {
+    await connectToDatabase()
 
-        const post = await Post.findOne({ slug })
-          .populate("author", "name image")
-          .populate({
-            path: "comments",
-            populate: {
-              path: "author",
-              select: "name image",
-            },
-          })
-          .lean()
+    const post = await Post.findOne({ slug })
+      .populate("author", "name image")
+      .populate({
+        path: "comments",
+        populate: {
+          path: "author",
+          select: "name image",
+        },
+      })
+      .lean()
 
-        return post ? serializeDocument(post) : null
-      } catch (error) {
-        console.error("Error fetching post by slug:", error)
-        return null
-      }
-    },
-    60 * 10, // TTL: 10 minutos
-  )
+    return post ? serializeDocument(post) : null
+  } catch (error) {
+    console.error("Error fetching post by slug:", error)
+    return null
+  }
+  //   },
+  //   60 * 10, // TTL: 10 minutos
+  // )
 })
 
 export const getPostById = cache(async (id: string) => {
-  const cacheKey = `posts:id:${id}`
+  // const cacheKey = `posts:id:${id}`
 
-  return fetchWithCache(
-    cacheKey,
-    async () => {
-      try {
-        await connectToDatabase()
+  // return fetchWithCache(
+  //   cacheKey,
+  //   async () => {
+  try {
+    await connectToDatabase()
 
-        const post = await Post.findById(id).populate("author", "name image").lean()
+    const post = await Post.findById(id).populate("author", "name image").lean()
 
-        return post ? serializeDocument(post) : null
-      } catch (error) {
-        console.error("Error fetching post by id:", error)
-        return null
-      }
-    },
-    60 * 10, // TTL: 10 minutos
-  )
+    return post ? serializeDocument(post) : null
+  } catch (error) {
+    console.error("Error fetching post by id:", error)
+    return null
+  }
+  //   },
+  //   60 * 10, // TTL: 10 minutos
+  // )
 })
 
 export const getPostsForAdmin = cache(async (userId: string, isAdmin: boolean) => {
-  const cacheKey = `posts:admin:${userId}:${isAdmin}`
+  // const cacheKey = `posts:admin:${userId}:${isAdmin}`
 
-  return fetchWithCache(
-    cacheKey,
-    async () => {
-      try {
-        await connectToDatabase()
+  // return fetchWithCache(
+  //   cacheKey,
+  //   async () => {
+  try {
+    await connectToDatabase()
 
-        const query = isAdmin ? {} : { author: userId }
+    const query = isAdmin ? {} : { author: userId }
 
-        const posts = await Post.find(query)
-          .sort({ createdAt: -1 })
-          .populate("author", "name")
-          .select("title slug createdAt isCompleted")
-          .lean()
+    const posts = await Post.find(query)
+      .sort({ createdAt: -1 })
+      .populate("author", "name")
+      .select("title slug createdAt isCompleted")
+      .lean()
 
-        return serializeDocument(posts)
-      } catch (error) {
-        console.error("Error fetching posts for admin:", error)
-        return []
-      }
-    },
-    60 * 2, // TTL: 2 minutos (más corto para datos administrativos)
-  )
+    return serializeDocument(posts)
+  } catch (error) {
+    console.error("Error fetching posts for admin:", error)
+    return []
+  }
+  //   },
+  //   60 * 2, // TTL: 2 minutos (más corto para datos administrativos)
+  // )
 })
 
 // Función para invalidar caché después de modificaciones
