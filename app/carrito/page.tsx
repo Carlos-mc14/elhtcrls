@@ -13,6 +13,11 @@ import { ShoppingCart, MessageCircle, ArrowLeft, Minus, Plus, Trash2, Share2, Co
 import { useCart } from "@/hooks/use-cart"
 import { motion, AnimatePresence } from "framer-motion"
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+export const fetchCache = 'force-no-store'
+
+
 export default function CartPage() {
   const { cart, updateQuantity, removeFromCart, clearCart } = useCart()
   const [customerName, setCustomerName] = useState("")

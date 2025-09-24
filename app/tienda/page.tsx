@@ -5,6 +5,10 @@ import { PaginationControl } from "@/components/pagination-control"
 import { Suspense } from "react"
 import type { Product } from "@/types/product"
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+export const fetchCache = 'force-no-store'
+
 interface PageProps {
   searchParams: { page?: string }
 }

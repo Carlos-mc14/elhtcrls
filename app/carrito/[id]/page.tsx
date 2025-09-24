@@ -2,6 +2,10 @@ import { Suspense } from "react"
 import { CartView } from "@/components/cart-view"
 import { Loader2 } from "lucide-react"
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+export const fetchCache = 'force-no-store'
+
 interface CartPageProps {
   params: Promise<{ id: string }>
 }
