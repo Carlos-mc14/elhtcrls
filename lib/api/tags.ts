@@ -1,17 +1,12 @@
 // lib/api/tags.ts
 
 import type { Tag } from "@/types/tag"
+import { buildApiUrl } from "@/lib/utils/api-utils"
 
 interface GetTagsOptions {
   type?: "category" | "size" | "care" | "location"
   visible?: boolean
   search?: string
-}
-
-function buildUrl(path: string, params: URLSearchParams) {
-  const base = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
-  const qs = params.toString()
-  return `${base.replace(/\/$/, "")}${path}${qs ? `?${qs}` : ""}`
 }
 
 export async function getTags(options: GetTagsOptions = {}): Promise<Tag[]> {
@@ -23,7 +18,7 @@ export async function getTags(options: GetTagsOptions = {}): Promise<Tag[]> {
     if (visible !== undefined) searchParams.append("visible", String(visible))
     if (search) searchParams.append("search", search)
 
-    const response = await fetch(buildUrl("/api/tags", searchParams), {
+    const response = await fetch(buildApiUrl("/api/tags", searchParams), {
       next: { revalidate: 3600 }, // Cache por 1 hora
     })
 
@@ -46,7 +41,7 @@ export async function getTags(options: GetTagsOptions = {}): Promise<Tag[]> {
 // Función para obtener una etiqueta específica
 export async function getTag(id: string): Promise<Tag | null> {
   try {
-    const response = await fetch(buildUrl(`/api/tags/${encodeURIComponent(id)}`, new URLSearchParams()), {
+    const response = await fetch(buildApiUrl(`/api/tags/${encodeURIComponent(id)}`), {
       next: { revalidate: 3600 },
     })
 

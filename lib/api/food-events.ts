@@ -1,11 +1,7 @@
 import type { FoodEvent, CreateFoodEventData } from "@/types/food-event"
+import { buildApiUrl } from "@/lib/utils/api-utils"
 
 const API_BASE = "/api/food-events"
-
-function getBaseUrl() {
-  // Server-side
-  return process.env.NEXT_PUBLIC_BASE_URL
-}
 
 export async function getFoodEvents(options?: {
   includeInactive?: boolean
@@ -21,8 +17,7 @@ export async function getFoodEvents(options?: {
     params.append("upcoming", "true")
   }
 
-  const url = params.toString() ? `${API_BASE}?${params}` : API_BASE
-  const fullUrl = `${getBaseUrl()}${url}`
+  const fullUrl = buildApiUrl(API_BASE, params)
 
   const response = await fetch(fullUrl, {
     cache: "no-store",
@@ -36,7 +31,7 @@ export async function getFoodEvents(options?: {
 }
 
 export async function getFoodEvent(id: string): Promise<FoodEvent> {
-  const fullUrl = `${getBaseUrl()}${API_BASE}/${id}`
+  const fullUrl = buildApiUrl(`${API_BASE}/${id}`)
 
   const response = await fetch(fullUrl, {
     cache: "no-store",
@@ -50,7 +45,7 @@ export async function getFoodEvent(id: string): Promise<FoodEvent> {
 }
 
 export async function createFoodEvent(data: CreateFoodEventData): Promise<FoodEvent> {
-  const fullUrl = `${getBaseUrl()}${API_BASE}`
+  const fullUrl = buildApiUrl(API_BASE)
 
   const response = await fetch(fullUrl, {
     method: "POST",
@@ -69,7 +64,7 @@ export async function createFoodEvent(data: CreateFoodEventData): Promise<FoodEv
 }
 
 export async function updateFoodEvent(id: string, data: Partial<CreateFoodEventData>): Promise<FoodEvent> {
-  const fullUrl = `${getBaseUrl()}${API_BASE}/${id}`
+  const fullUrl = buildApiUrl(`${API_BASE}/${id}`)
 
   const response = await fetch(fullUrl, {
     method: "PUT",
@@ -88,7 +83,7 @@ export async function updateFoodEvent(id: string, data: Partial<CreateFoodEventD
 }
 
 export async function deleteFoodEvent(id: string): Promise<void> {
-  const fullUrl = `${getBaseUrl()}${API_BASE}/${id}`
+  const fullUrl = buildApiUrl(`${API_BASE}/${id}`)
 
   const response = await fetch(fullUrl, {
     method: "DELETE",

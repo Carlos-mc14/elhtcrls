@@ -1,4 +1,5 @@
 import type { FoodReservation, CreateReservationData } from "@/types/food-event"
+import { buildApiUrl } from "@/lib/utils/api-utils"
 
 const API_BASE = "/api/food-reservations"
 
@@ -16,9 +17,9 @@ export async function getFoodReservations(options?: {
     params.append("status", options.status)
   }
 
-  const url = params.toString() ? `${API_BASE}?${params}` : API_BASE
+  const fullUrl = buildApiUrl(API_BASE, params)
 
-  const response = await fetch(url, {
+  const response = await fetch(fullUrl, {
     cache: "no-store",
   })
 
@@ -30,7 +31,7 @@ export async function getFoodReservations(options?: {
 }
 
 export async function getFoodReservation(id: string): Promise<FoodReservation> {
-  const response = await fetch(`${API_BASE}/${id}`, {
+  const response = await fetch(buildApiUrl(`${API_BASE}/${id}`), {
     cache: "no-store",
   })
 
@@ -42,7 +43,7 @@ export async function getFoodReservation(id: string): Promise<FoodReservation> {
 }
 
 export async function createFoodReservation(data: CreateReservationData): Promise<FoodReservation> {
-  const response = await fetch(API_BASE, {
+  const response = await fetch(buildApiUrl(API_BASE), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -59,7 +60,7 @@ export async function createFoodReservation(data: CreateReservationData): Promis
 }
 
 export async function updateFoodReservation(id: string, data: Partial<FoodReservation>): Promise<FoodReservation> {
-  const response = await fetch(`${API_BASE}/${id}`, {
+  const response = await fetch(buildApiUrl(`${API_BASE}/${id}`), {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -76,7 +77,7 @@ export async function updateFoodReservation(id: string, data: Partial<FoodReserv
 }
 
 export async function deleteFoodReservation(id: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/${id}`, {
+  const response = await fetch(buildApiUrl(`${API_BASE}/${id}`), {
     method: "DELETE",
   })
 

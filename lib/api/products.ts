@@ -1,4 +1,5 @@
 import type { Product } from "@/types/product"
+import { buildApiUrl } from "@/lib/utils/api-utils"
 
 interface GetProductsOptions {
   limit?: number
@@ -6,12 +7,6 @@ interface GetProductsOptions {
   category?: string
   search?: string
   tags?: string[] // Array de IDs de etiquetas
-}
-
-function buildUrl(path: string, params: URLSearchParams) {
-  const base = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
-  const qs = params.toString()
-  return `${base.replace(/\/$/, "")}${path}${qs ? `?${qs}` : ""}`
 }
 
 export async function getProducts(options: GetProductsOptions = {}): Promise<Product[]> {
@@ -27,7 +22,7 @@ export async function getProducts(options: GetProductsOptions = {}): Promise<Pro
       searchParams.append("tags", tags.join(","))
     }
 
-    const response = await fetch(buildUrl("/api/products", searchParams), {
+    const response = await fetch(buildApiUrl("/api/products", searchParams), {
       next: { revalidate: 3600 }, // Cache por 1 hora
     })
 
@@ -49,7 +44,7 @@ export async function getProducts(options: GetProductsOptions = {}): Promise<Pro
 // Función para obtener un producto específico
 export async function getProduct(id: string): Promise<Product | null> {
   try {
-    const response = await fetch(buildUrl(`/api/products/${encodeURIComponent(id)}`, new URLSearchParams()), {
+    const response = await fetch(buildApiUrl(`/api/products/${encodeURIComponent(id)}`), {
       next: { revalidate: 3600 },
     })
 
