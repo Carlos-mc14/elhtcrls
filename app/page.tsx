@@ -5,6 +5,10 @@ import type { Post } from "@/types/post"
 import { HomeContent } from "@/components/home-content"
 import { FoodEventsSection } from "@/components/food-events-section"
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+export const fetchCache = 'force-no-store'
+
 // Definir la interfaz para el producto
 interface Product {
   _id: string
