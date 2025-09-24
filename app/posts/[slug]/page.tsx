@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation"
 import Image from "next/image"
 import { getPostBySlug } from "@/lib/api/posts"
-import { CommentSection } from "@/components/comment-section"
 import { AlternatingDiary } from "@/components/alternating-diary"
 import { PostTags } from "@/components/post-tags"
 import { formatDate } from "@/lib/utils/date-utils"
@@ -99,7 +98,6 @@ export default async function PostPage({ params }: PostPageProps) {
   
         <AlternatingDiary entries={post.diaryEntries || []} postId={post._id.toString()} isAuthor={isAuthor} />
   
-        <CommentSection postId={post._id.toString()} comments={post.comments || []} />
       </article>
     </div>
   )

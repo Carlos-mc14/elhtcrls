@@ -3,20 +3,7 @@ import { ProductCard } from "@/components/product-card"
 import { LocationBanner } from "@/components/location-banner"
 import { PaginationControl } from "@/components/pagination-control"
 import { Suspense } from "react"
-
-// Definir la interfaz para el producto
-interface Product {
-  _id: string
-  name: string
-  description: string
-  price: number
-  image: string
-  additionalImages?: string[]
-  category: string
-  stock: number
-  facebookUrl: string
-  postSlug?: string
-}
+import type { Product } from "@/types/product"
 
 interface PageProps {
   searchParams: { page?: string }

@@ -11,7 +11,9 @@ import { useToast } from "@/components/ui/use-toast"
 import { ImageSelector } from "@/components/image-selector"
 import { Loader2, X, Plus } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
 import Image from "next/image"
+import type { Tag } from "@/types/tag"
 
 interface Post {
   _id: string
@@ -29,6 +31,9 @@ export function ProductForm({ product, posts = [] }: ProductFormProps) {
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const imagePickerRef = useRef<HTMLDivElement>(null)
+  const [availableTags, setAvailableTags] = useState<Tag[]>([])
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [tagStocks, setTagStocks] = useState<Record<string, number>>({})
 
   const [formData, setFormData] = useState({
     name: "",
@@ -36,7 +41,6 @@ export function ProductForm({ product, posts = [] }: ProductFormProps) {
     price: "",
     image: "",
     additionalImages: [] as string[],
-    category: "",
     stock: "0",
     facebookUrl: "",
     postSlug: "",
@@ -47,8 +51,23 @@ export function ProductForm({ product, posts = [] }: ProductFormProps) {
     description: false,
     price: false,
     image: false,
-    category: false,
   })
+
+  useEffect(() => {
+    const fetchTags = async () => {
+      try {
+        const response = await fetch("/api/tags?visible=true")
+        if (response.ok) {
+          const data = await response.json()
+          setAvailableTags(data.tags || [])
+        }
+      } catch (error) {
+        console.error("Error al cargar etiquetas:", error)
+      }
+    }
+
+    fetchTags()
+  }, [])
 
   useEffect(() => {
     if (product) {
@@ -58,19 +77,48 @@ export function ProductForm({ product, posts = [] }: ProductFormProps) {
         price: product.price?.toString() || "",
         image: product.image || "",
         additionalImages: product.additionalImages || [],
-        category: product.category || "",
         stock: product.stock?.toString() || "0",
         facebookUrl: product.facebookUrl || "",
         postSlug: product.postSlug || "",
       })
+
+      if (product.tags) {
+        const tagIds = product.tags.map((tag: any) => (typeof tag === "string" ? tag : tag._id))
+        setSelectedTags(tagIds)
+      }
+
+      if (product.tagStock) {
+        const stockMap: Record<string, number> = {}
+        product.tagStock.forEach((ts: any) => {
+          stockMap[ts.tagId] = ts.stock
+        })
+        setTagStocks(stockMap)
+      }
     }
   }, [product])
+
+  const handleTagToggle = (tagId: string) => {
+    setSelectedTags((prev) => {
+      if (prev.includes(tagId)) {
+        const newStocks = { ...tagStocks }
+        delete newStocks[tagId]
+        setTagStocks(newStocks)
+        return prev.filter((id) => id !== tagId)
+      } else {
+        setTagStocks((prev) => ({ ...prev, [tagId]: 0 }))
+        return [...prev, tagId]
+      }
+    })
+  }
+
+  const handleTagStockChange = (tagId: string, stock: number) => {
+    setTagStocks((prev) => ({ ...prev, [tagId]: Math.max(0, stock) }))
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
 
-    // Limpiar el error cuando el usuario empieza a escribir
     if (formErrors[name as keyof typeof formErrors]) {
       setFormErrors((prev) => ({ ...prev, [name]: false }))
     }
@@ -79,7 +127,6 @@ export function ProductForm({ product, posts = [] }: ProductFormProps) {
   const handleSelectChange = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }))
 
-    // Limpiar el error cuando el usuario selecciona algo
     if (formErrors[name as keyof typeof formErrors]) {
       setFormErrors((prev) => ({ ...prev, [name]: false }))
     }
@@ -88,7 +135,6 @@ export function ProductForm({ product, posts = [] }: ProductFormProps) {
   const handleImageChange = (url: string) => {
     setFormData((prev) => ({ ...prev, image: url }))
 
-    // Limpiar el error cuando el usuario selecciona una imagen
     if (formErrors.image) {
       setFormErrors((prev) => ({ ...prev, image: false }))
     }
@@ -101,7 +147,6 @@ export function ProductForm({ product, posts = [] }: ProductFormProps) {
         additionalImages: [...prev.additionalImages, url],
       }))
 
-      // Mostrar mensaje de confirmación
       toast({
         title: "Imagen añadida",
         description: "La imagen adicional se ha añadido correctamente.",
@@ -122,7 +167,6 @@ export function ProductForm({ product, posts = [] }: ProductFormProps) {
       description: !formData.description.trim(),
       price: !formData.price || isNaN(Number(formData.price)) || Number(formData.price) <= 0,
       image: !formData.image,
-      category: !formData.category,
     }
 
     setFormErrors(errors)
@@ -147,6 +191,11 @@ export function ProductForm({ product, posts = [] }: ProductFormProps) {
       const url = product ? `/api/products/${product._id}` : "/api/products"
       const method = product ? "PUT" : "POST"
 
+      const tagStockArray = selectedTags.map((tagId) => ({
+        tagId,
+        stock: tagStocks[tagId] || 0,
+      }))
+
       const response = await fetch(url, {
         method,
         headers: {
@@ -157,6 +206,8 @@ export function ProductForm({ product, posts = [] }: ProductFormProps) {
           price: Number(formData.price),
           stock: Number(formData.stock || 0),
           postSlug: formData.postSlug === "none" ? "" : formData.postSlug,
+          tags: selectedTags,
+          tagStock: tagStockArray,
         }),
       })
 
@@ -186,22 +237,21 @@ export function ProductForm({ product, posts = [] }: ProductFormProps) {
     }
   }
 
-  const categories = [
-    "Plantas de Interior",
-    "Plantas de Exterior",
-    "Suculentas",
-    "Cactus",
-    "Hierbas",
-    "Hortalizas",
-    "Frutales",
-    "Flores",
-    "Bonsái",
-    "Accesorios",
-    "Herramientas",
-    "Macetas",
-    "Sustratos",
-    "Fertilizantes",
-  ]
+  const tagsByType = availableTags.reduce(
+    (acc, tag) => {
+      if (!acc[tag.type]) acc[tag.type] = []
+      acc[tag.type].push(tag)
+      return acc
+    },
+    {} as Record<string, Tag[]>,
+  )
+
+  const typeLabels = {
+    category: "Categorías",
+    size: "Tamaños",
+    care: "Cuidado",
+    location: "Ubicación",
+  }
 
   const openImageSelector = () => {
     const el = imagePickerRef.current
@@ -230,33 +280,6 @@ export function ProductForm({ product, posts = [] }: ProductFormProps) {
         </div>
 
         <div>
-          <label htmlFor="category" className="block text-sm font-medium mb-1">
-            Categoría <span className="text-red-500">*</span>
-          </label>
-          <Select
-            value={formData.category}
-            onValueChange={(value) => handleSelectChange("category", value)}
-            onOpenChange={() => {
-              if (formErrors.category) {
-                setFormErrors((prev) => ({ ...prev, category: false }))
-              }
-            }}
-          >
-            <SelectTrigger className={formErrors.category ? "border-red-500" : ""}>
-              <SelectValue placeholder="Seleccionar categoría" />
-            </SelectTrigger>
-            <SelectContent>
-              {categories.map((category) => (
-                <SelectItem key={category} value={category}>
-                  {category}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {formErrors.category && <p className="text-red-500 text-sm mt-1">Este campo es obligatorio</p>}
-        </div>
-
-        <div>
           <label htmlFor="price" className="block text-sm font-medium mb-1">
             Precio (S/) <span className="text-red-500">*</span>
           </label>
@@ -276,7 +299,7 @@ export function ProductForm({ product, posts = [] }: ProductFormProps) {
 
         <div>
           <label htmlFor="stock" className="block text-sm font-medium mb-1">
-            Stock
+            Stock General
           </label>
           <Input
             id="stock"
@@ -288,6 +311,7 @@ export function ProductForm({ product, posts = [] }: ProductFormProps) {
             onChange={handleChange}
             placeholder="0"
           />
+          <p className="text-xs text-gray-500 mt-1">Stock base del producto (opcional si usas stock por etiquetas)</p>
         </div>
 
         <div className="md:col-span-2">
@@ -303,6 +327,81 @@ export function ProductForm({ product, posts = [] }: ProductFormProps) {
             className={`h-24 ${formErrors.description ? "border-red-500" : ""}`}
           />
           {formErrors.description && <p className="text-red-500 text-sm mt-1">Este campo es obligatorio</p>}
+        </div>
+
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium mb-3">Etiquetas y Stock</label>
+          <div className="space-y-4">
+            {Object.entries(tagsByType).map(([type, tags]) => (
+              <div key={type}>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">
+                  {typeLabels[type as keyof typeof typeLabels]}
+                </h4>
+                <div className="space-y-3">
+                  {tags.map((tag) => (
+                    <div key={tag._id} className="flex items-center gap-3 p-3 border rounded-lg">
+                      <Badge
+                        variant={selectedTags.includes(tag._id) ? "default" : "outline"}
+                        className="cursor-pointer hover:bg-gray-100 flex-shrink-0"
+                        style={{
+                          backgroundColor: selectedTags.includes(tag._id) ? tag.color : "transparent",
+                          borderColor: tag.color,
+                          color: selectedTags.includes(tag._id) ? "white" : tag.color,
+                        }}
+                        onClick={() => handleTagToggle(tag._id)}
+                      >
+                        {tag.name}
+                        {tag.priceRange && (
+                          <span className="ml-1 text-xs opacity-75">
+                            ({tag.priceRange.min}-{tag.priceRange.max}
+                            {tag.priceRange.unit})
+                          </span>
+                        )}
+                      </Badge>
+
+                      {selectedTags.includes(tag._id) && (
+                        <div className="flex items-center gap-2">
+                          <label className="text-sm text-gray-600">Stock:</label>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={tagStocks[tag._id] || 0}
+                            onChange={(e) => handleTagStockChange(tag._id, Number(e.target.value))}
+                            className="w-20"
+                            placeholder="0"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {selectedTags.length > 0 && (
+            <div className="mt-3 p-3 bg-gray-50 rounded-md">
+              <p className="text-sm text-gray-600 mb-2">Resumen de etiquetas y stock:</p>
+              <div className="space-y-2">
+                {selectedTags.map((tagId) => {
+                  const tag = availableTags.find((t) => t._id === tagId)
+                  return tag ? (
+                    <div key={tagId} className="flex items-center justify-between">
+                      <Badge style={{ backgroundColor: tag.color, color: "white" }}>
+                        {tag.name}
+                        <X
+                          className="ml-1 h-3 w-3 cursor-pointer hover:bg-black/20 rounded-full"
+                          onClick={() => handleTagToggle(tagId)}
+                        />
+                      </Badge>
+                      <span className="text-sm text-gray-600">Stock: {tagStocks[tagId] || 0} unidades</span>
+                    </div>
+                  ) : null
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="md:col-span-2">
@@ -326,17 +425,13 @@ export function ProductForm({ product, posts = [] }: ProductFormProps) {
               type="button"
               variant="outline"
               onClick={openImageSelector}
-              className="w-full border-dashed border-2 py-8"
+              className="w-full border-dashed border-2 py-8 bg-transparent"
             >
               <Plus className="mr-2 h-4 w-4" />
               Añadir imagen adicional
             </Button>
             <div className="hidden" ref={imagePickerRef}>
-              <ImageSelector
-                value=""
-                onChange={handleAddAdditionalImage}
-                label="Imagen Adicional"
-              />
+              <ImageSelector value="" onChange={handleAddAdditionalImage} label="Imagen Adicional" />
             </div>
           </div>
 

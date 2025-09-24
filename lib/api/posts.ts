@@ -1,9 +1,8 @@
 import { cache } from "react"
 import { connectToDatabase } from "@/lib/mongodb"
-import { User } from "@/lib/models/user"       // ← IMPORTAR User primero
 import { Post } from "@/lib/models/post"
 import { fetchWithCache, invalidateCache, invalidateCachePattern } from "@/lib/redis"
-
+import { serializeDocument } from "@/lib/utils"
 
 // Función auxiliar para convertir _id de MongoDB a string y manejar fechas
 function convertMongoIds(obj: any): any {
@@ -77,8 +76,7 @@ export const getPosts = cache(async ({ page = 1, limit = 10, search = "", tag = 
           .populate("author", "name image")
           .lean()
 
-        // Convertir los IDs de MongoDB a strings
-        const serializedPosts = convertMongoIds(posts)
+        const serializedPosts = serializeDocument(posts)
 
         if (withPagination) {
           const total = await Post.countDocuments(query)
@@ -119,8 +117,7 @@ export const getPostBySlug = cache(async (slug: string) => {
           })
           .lean()
 
-        // Convertir los IDs de MongoDB a strings
-        return post ? convertMongoIds(post) : null
+        return post ? serializeDocument(post) : null
       } catch (error) {
         console.error("Error fetching post by slug:", error)
         return null
@@ -141,8 +138,7 @@ export const getPostById = cache(async (id: string) => {
 
         const post = await Post.findById(id).populate("author", "name image").lean()
 
-        // Convertir los IDs de MongoDB a strings
-        return post ? convertMongoIds(post) : null
+        return post ? serializeDocument(post) : null
       } catch (error) {
         console.error("Error fetching post by id:", error)
         return null
@@ -169,8 +165,7 @@ export const getPostsForAdmin = cache(async (userId: string, isAdmin: boolean) =
           .select("title slug createdAt isCompleted")
           .lean()
 
-        // Convertir los IDs de MongoDB a strings
-        return convertMongoIds(posts)
+        return serializeDocument(posts)
       } catch (error) {
         console.error("Error fetching posts for admin:", error)
         return []

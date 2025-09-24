@@ -1,13 +1,22 @@
+import type { Tag } from "./tag"
+
 export interface Product {
-    _id: string
-    name: string
-    description: string
-    price: number
-    image: string
-    category: string
+  _id: string
+  name: string
+  description: string
+  price: number
+  image: string
+  additionalImages: string[]
+  category: string
+  stock: number
+  facebookUrl?: string
+  postSlug?: string
+  tags?: Tag[]
+  tagStock?: Array<{
+    tagId: string
     stock: number
-    facebookUrl?: string
-    createdAt: string
-    updatedAt: string
-  }
-  
+    tag?: Tag
+  }>
+  createdAt: string
+  updatedAt: string
+}

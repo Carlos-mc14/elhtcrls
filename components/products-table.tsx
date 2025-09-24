@@ -20,7 +20,18 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/components/ui/use-toast"
-import { Edit, Trash, MoreHorizontal, Eye, ExternalLink, FileText, Search, Filter, ChevronLeft, ChevronRight } from "lucide-react"
+import {
+  Edit,
+  Trash,
+  MoreHorizontal,
+  Eye,
+  ExternalLink,
+  FileText,
+  Search,
+  Filter,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 
 interface ProductsTableProps {
@@ -33,28 +44,29 @@ export function ProductsTable({ products, isAdmin }: ProductsTableProps) {
   const { toast } = useToast()
   const [deleteProductId, setDeleteProductId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
-  
+
   // Estados para búsqueda, filtro y paginación
   const [searchTerm, setSearchTerm] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("all")
   const [currentPage, setCurrentPage] = useState(1)
   const productsPerPage = 10
-  
+
   // Lista de categorías disponibles
   const categories = useMemo(() => {
-    const uniqueCategories = Array.from(new Set(products.map(product => product.category)))
+    const uniqueCategories = Array.from(new Set(products.map((product) => product.category)))
     return uniqueCategories.sort()
   }, [products])
 
   // Filtrar productos según búsqueda y categoría
   const filteredProducts = useMemo(() => {
-    return products.filter(product => {
-      const matchesSearch = searchTerm === "" || 
+    return products.filter((product) => {
+      const matchesSearch =
+        searchTerm === "" ||
         product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         product.description?.toLowerCase().includes(searchTerm.toLowerCase())
-      
+
       const matchesCategory = categoryFilter === "all" || product.category === categoryFilter
-      
+
       return matchesSearch && matchesCategory
     })
   }, [products, searchTerm, categoryFilter])
@@ -140,8 +152,10 @@ export function ProductsTable({ products, isAdmin }: ProductsTableProps) {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas las categorías</SelectItem>
-              {categories.map(category => (
-                <SelectItem key={category} value={category}>{category}</SelectItem>
+              {categories.map((category) => (
+                <SelectItem key={category} value={category}>
+                  {category}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -150,7 +164,8 @@ export function ProductsTable({ products, isAdmin }: ProductsTableProps) {
 
       {/* Resultados y paginación */}
       <div className="text-sm text-gray-500 mb-2">
-        Mostrando {paginatedProducts.length > 0 ? (currentPage - 1) * productsPerPage + 1 : 0} - {Math.min(currentPage * productsPerPage, filteredProducts.length)} de {filteredProducts.length} productos
+        Mostrando {paginatedProducts.length > 0 ? (currentPage - 1) * productsPerPage + 1 : 0} -{" "}
+        {Math.min(currentPage * productsPerPage, filteredProducts.length)} de {filteredProducts.length} productos
       </div>
 
       <div className="rounded-md border border-gray-400 shadow-sm overflow-hidden">
@@ -160,6 +175,7 @@ export function ProductsTable({ products, isAdmin }: ProductsTableProps) {
               <TableHead>Imagen</TableHead>
               <TableHead>Nombre</TableHead>
               <TableHead>Categoría</TableHead>
+              <TableHead>Etiquetas</TableHead>
               <TableHead>Precio</TableHead>
               <TableHead>Stock</TableHead>
               <TableHead>Post Vinculado</TableHead>
@@ -182,6 +198,30 @@ export function ProductsTable({ products, isAdmin }: ProductsTableProps) {
                   </TableCell>
                   <TableCell className="font-medium">{product.name}</TableCell>
                   <TableCell>{product.category}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1 max-w-[200px]">
+                      {product.tags && product.tags.length > 0 ? (
+                        product.tags.slice(0, 3).map((tag: any) => (
+                          <Badge
+                            key={tag._id}
+                            variant="secondary"
+                            className="text-xs"
+                            style={{ backgroundColor: tag.color + "20", color: tag.color }}
+                          >
+                            {tag.name}
+                            {tag.internalId && <span className="ml-1 text-gray-500">({tag.internalId})</span>}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-gray-400 text-sm">Sin etiquetas</span>
+                      )}
+                      {product.tags && product.tags.length > 3 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{product.tags.length - 3}
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>{formatPrice(product.price)}</TableCell>
                   <TableCell>
                     <Badge
@@ -247,7 +287,7 @@ export function ProductsTable({ products, isAdmin }: ProductsTableProps) {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                <TableCell colSpan={8} className="text-center py-8 text-gray-500">
                   No hay productos disponibles {searchTerm || categoryFilter ? "con estos filtros" : ""}
                 </TableCell>
               </TableRow>
@@ -263,30 +303,30 @@ export function ProductsTable({ products, isAdmin }: ProductsTableProps) {
             Página {currentPage} de {totalPages}
           </div>
           <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
             >
               <ChevronLeft className="h-4 w-4 mr-1" />
               Anterior
             </Button>
-            
+
             <div className="flex items-center gap-1">
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                 // Mostrar 5 páginas centradas en la actual
-                let pageToShow: number;
+                let pageToShow: number
                 if (totalPages <= 5) {
-                  pageToShow = i + 1;
+                  pageToShow = i + 1
                 } else if (currentPage <= 3) {
-                  pageToShow = i + 1;
+                  pageToShow = i + 1
                 } else if (currentPage >= totalPages - 2) {
-                  pageToShow = totalPages - 4 + i;
+                  pageToShow = totalPages - 4 + i
                 } else {
-                  pageToShow = currentPage - 2 + i;
+                  pageToShow = currentPage - 2 + i
                 }
-                
+
                 return (
                   <Button
                     key={pageToShow}
@@ -297,13 +337,13 @@ export function ProductsTable({ products, isAdmin }: ProductsTableProps) {
                   >
                     {pageToShow}
                   </Button>
-                );
+                )
               })}
             </div>
-            
-            <Button 
-              variant="outline" 
-              size="sm" 
+
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
             >

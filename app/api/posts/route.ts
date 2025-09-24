@@ -6,6 +6,7 @@ import { Post } from "@/lib/models/post"
 import { revalidatePath } from "next/cache"
 import slugify from "slugify"
 import { invalidatePostsCache } from "@/lib/api/posts"
+import { serializeDocument } from "@/lib/utils" // Importar serializeDocument
 import mongoose from "mongoose"
 
 export async function POST(req: NextRequest) {
@@ -24,7 +25,15 @@ export async function POST(req: NextRequest) {
 
     await connectToDatabase()
 
-    const slug = slugify(title, { lower: true, strict: true })
+    const baseSlug = slugify(title, { lower: true, strict: true })
+    let slug = baseSlug
+    let counter = 1
+
+    // Verificar si el slug ya existe y generar uno único
+    while (await Post.findOne({ slug })) {
+      slug = `${baseSlug}-${counter}`
+      counter++
+    }
 
     // Asegurarse de que el ID del autor sea un ObjectId válido
     const authorId = new mongoose.Types.ObjectId(session.user.id)
@@ -43,13 +52,18 @@ export async function POST(req: NextRequest) {
 
     await post.save()
 
+    await post.populate("author", "name image")
+
     // Invalidar caché
     await invalidatePostsCache(post._id.toString(), post.slug)
 
     revalidatePath("/")
     revalidatePath("/posts")
+    revalidatePath("/admin/posts")
 
-    return NextResponse.json({ post }, { status: 201 })
+    const serializedPost = serializeDocument(post)
+
+    return NextResponse.json({ post: serializedPost }, { status: 201 })
   } catch (error) {
     console.error("Error al crear post:", error)
     return NextResponse.json({ error: "Error al crear la publicación" }, { status: 500 })
@@ -87,10 +101,13 @@ export async function GET(req: NextRequest) {
 
     const total = await Post.countDocuments(query)
 
+    const serializedPosts = serializeDocument(posts)
+
     return NextResponse.json({
-      posts,
+      posts: serializedPosts,
       totalPages: Math.ceil(total / limit),
       currentPage: page,
+      total, // Agregar total para consistencia
     })
   } catch (error) {
     console.error("Error al obtener posts:", error)

@@ -1,144 +1,97 @@
-import { cache } from "react"
-import { connectToDatabase } from "@/lib/mongodb"
-import { Product } from "@/lib/models/product"
+import type { Product } from "@/types/product"
 
-// Función auxiliar para convertir _id de MongoDB a string
-function convertMongoIds(obj: any): any {
-  if (!obj) return obj
-
-  // Si es un array, convertir cada elemento
-  if (Array.isArray(obj)) {
-    return obj.map((item) => convertMongoIds(item))
-  }
-
-  // Si es un objeto, procesar sus propiedades
-  if (typeof obj === "object") {
-    const result: any = {}
-
-    for (const key in obj) {
-      // Convertir _id a string
-      if (key === "_id") {
-        result._id = obj._id.toString()
-      }
-      // Procesar objetos anidados
-      else if (typeof obj[key] === "object" && obj[key] !== null) {
-        result[key] = convertMongoIds(obj[key])
-      }
-      // Copiar valores primitivos
-      else {
-        result[key] = obj[key]
-      }
-    }
-
-    return result
-  }
-
-  return obj
+interface GetProductsOptions {
+  limit?: number
+  sortBy?: "newest" | "oldest" | "price-asc" | "price-desc" | "name"
+  category?: string
+  search?: string
+  tags?: string[] // Array de IDs de etiquetas
 }
 
-// Opción 1: Cargar todos los productos de una vez (para catálogos pequeños a medianos)
-export const getProducts = cache(async () => {
-  await connectToDatabase();
-  const products = await Product.find()
-                     .sort({ createdAt: -1 })
-                     .lean();
-  return convertMongoIds(products);
-});
+function buildUrl(path: string, params: URLSearchParams) {
+  const base = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+  const qs = params.toString()
+  return `${base.replace(/\/$/, "")}${path}${qs ? `?${qs}` : ""}`
+}
 
-// Opción 2: Mantener paginación en el servidor (para catálogos muy grandes)
-// export const getProducts = cache(async ({ 
-//   page = 1, 
-//   limit = 50, // Aumentamos el límite por defecto
-//   search = "",
-//   category = ""
-// } = {}) => {
-//   await connectToDatabase();
-//   
-//   // Construir el filtro
-//   const filter: any = {};
-//   
-//   // Añadir filtro de búsqueda si existe
-//   if (search) {
-//     filter.$or = [
-//       { name: { $regex: search, $options: 'i' } },
-//       { description: { $regex: search, $options: 'i' } }
-//     ];
-//   }
-//   
-//   // Añadir filtro de categoría si existe
-//   if (category && category !== "all") {
-//     filter.category = category;
-//   }
-//   
-//   // Calcular el salto para la paginación
-//   const skip = (page - 1) * limit;
-//   
-//   // Obtener productos con filtros
-//   const products = await Product.find(filter)
-//                      .sort({ createdAt: -1 })
-//                      .skip(skip)
-//                      .limit(limit)
-//                      .lean();
-//   
-//   // Obtener conteo total para la paginación
-//   const total = await Product.countDocuments(filter);
-//   
-//   return {
-//     products: convertMongoIds(products),
-//     pagination: {
-//       total,
-//       pages: Math.ceil(total / limit),
-//       page,
-//       limit
-//     }
-//   };
-// });
-
-export const getProductById = cache(async (id: string) => {
+export async function getProducts(options: GetProductsOptions = {}): Promise<Product[]> {
   try {
-    await connectToDatabase()
+    const { limit, sortBy = "newest", category, search, tags } = options
 
-    const product = await Product.findById(id).lean()
+    const searchParams = new URLSearchParams()
+    if (limit != null) searchParams.append("limit", String(limit))
+    if (sortBy) searchParams.append("sortBy", sortBy)
+    if (category) searchParams.append("category", category)
+    if (search) searchParams.append("search", search)
+    if (tags && tags.length > 0) {
+      searchParams.append("tags", tags.join(","))
+    }
 
-    // Convertir los IDs de MongoDB a strings
-    return product ? convertMongoIds(product) : null
+    const response = await fetch(buildUrl("/api/products", searchParams), {
+      next: { revalidate: 3600 }, // Cache por 1 hora
+    })
+
+    if (!response.ok) {
+      throw new Error(`Error al obtener productos: ${response.status}`)
+    }
+
+    const data = await response.json()
+
+    const items: any[] = Array.isArray(data) ? data : data?.products || data?.data || []
+
+    return items as Product[]
   } catch (error) {
-    console.error("Error al obtener producto por ID:", error)
+    console.error("Error al obtener productos:", error)
+    return []
+  }
+}
+
+// Función para obtener un producto específico
+export async function getProduct(id: string): Promise<Product | null> {
+  try {
+    const response = await fetch(buildUrl(`/api/products/${encodeURIComponent(id)}`, new URLSearchParams()), {
+      next: { revalidate: 3600 },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Error al obtener producto: ${response.status}`)
+    }
+
+    const data = await response.json()
+    return data?.product || data || null
+  } catch (error) {
+    console.error("Error al obtener producto:", error)
     return null
   }
-})
+}
 
-export const getProductsByCategory = cache(async (category: string) => {
-  try {
-    await connectToDatabase()
+export const getProductById = getProduct
 
-    const products = await Product.find({ category }).sort({ createdAt: -1 }).lean()
+// Funciones de utilidad para obtener productos específicos
+export async function getLatestProducts(limit = 8): Promise<Product[]> {
+  return getProducts({ limit, sortBy: "newest" })
+}
 
-    // Convertir los IDs de MongoDB a strings
-    return convertMongoIds(products)
-  } catch (error) {
-    console.error("Error al obtener productos por categoría:", error)
-    return []
-  }
-})
+export async function getFeaturedProducts(limit = 4): Promise<Product[]> {
+  return getProducts({ limit, sortBy: "newest" })
+}
 
-// Nueva función para buscar productos (útil si necesitamos operaciones de búsqueda en el servidor)
-export const searchProducts = cache(async (query: string) => {
-  try {
-    await connectToDatabase()
+export async function getProductsByCategory(category: string, limit?: number): Promise<Product[]> {
+  return getProducts({ category, limit, sortBy: "newest" })
+}
 
-    const products = await Product.find({
-      $or: [
-        { name: { $regex: query, $options: 'i' } },
-        { description: { $regex: query, $options: 'i' } }
-      ]
-    })
-    .sort({ createdAt: -1 })
-    .lean()
+// Función para obtener productos por etiquetas
+export async function getProductsByTags(tagIds: string[], limit?: number): Promise<Product[]> {
+  return getProducts({ tags: tagIds, limit, sortBy: "newest" })
+}
 
-    return convertMongoIds(products)
-  } catch (error) {
-    console.error("Error al buscar productos:", error)
-    return []
-  }
-})
+// Función para obtener productos por tipo de etiqueta
+export async function getProductsByTagType(
+  tagType: "category" | "size" | "care" | "location",
+  limit?: number,
+): Promise<Product[]> {
+  // Esta función requeriría primero obtener las etiquetas del tipo específico
+  // y luego filtrar productos por esas etiquetas
+  // Por simplicidad, se puede implementar más adelante si es necesario
+  return getProducts({ limit, sortBy: "newest" })
+}

@@ -1,133 +1,91 @@
-import { notFound } from "next/navigation"
-import Image from "next/image"
-import Link from "next/link"
-import { getProductById, getProductsByCategory } from "@/lib/api/products"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { ShoppingCart, Facebook, ArrowLeft } from "lucide-react"
-import type { Metadata } from "next"
+import { getProducts } from "@/lib/api/products"
+import { ProductCard } from "@/components/product-card"
+import { LocationBanner } from "@/components/location-banner"
+import { PaginationControl } from "@/components/pagination-control"
+import { ProductTagFilter } from "@/components/product-tag-filter"
+import { ProductSearchFilter } from "@/components/product-search-filter"
+import { Suspense } from "react"
 import type { Product } from "@/types/product"
 
-interface ProductPageProps {
-  params: {
-    id: string
+interface PageProps {
+  searchParams: {
+    page?: string
+    search?: string
+    category?: string
+    sortBy?: string
+    tags?: string
   }
 }
 
-export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
-  const id = await params.id
-  const product = await getProductById(id)
+export default async function StorePage({ searchParams }: PageProps) {
+  const resolvedSearchParams = await searchParams
+  const currentPage = Number(resolvedSearchParams.page) || 1
+  const productsPerPage = 8
 
-  if (!product) {
-    return {
-      title: "Producto no encontrado",
-      description: "El producto que buscas no existe",
-    }
-  }
+  const selectedTags = resolvedSearchParams.tags ? resolvedSearchParams.tags.split(",") : []
 
-  return {
-    title: `${product.name} | El Huerto De Carlos Tienda`,
-    description: product.description,
-    openGraph: {
-      images: [product.image],
-    },
-  }
-}
+  const allProducts = (await getProducts({
+    search: resolvedSearchParams.search,
+    category: resolvedSearchParams.category,
+    sortBy: resolvedSearchParams.sortBy as any,
+    tags: selectedTags.length > 0 ? selectedTags : undefined,
+  })) as Product[]
 
-export default async function ProductPage({ params }: ProductPageProps) {
-  const id = await params.id
-  const product = await getProductById(id)
+  // Calculamos el total de páginas
+  const totalPages = Math.ceil(allProducts.length / productsPerPage)
 
-  if (!product) {
-    notFound()
-  }
-
-  // Obtener productos relacionados
-  const relatedProducts = await getProductsByCategory(product.category)
-  const filteredRelatedProducts = relatedProducts.filter((p: Product) => p._id !== product._id).slice(0, 4)
+  // Obtenemos los productos para esta página
+  const startIndex = (currentPage - 1) * productsPerPage
+  const endIndex = startIndex + productsPerPage
+  const productsToDisplay = allProducts.slice(startIndex, endIndex)
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <Link href="/tienda" className="flex items-center text-green-600 hover:text-green-800 mb-6">
-        <ArrowLeft className="mr-2 h-4 w-4" />
-        Volver a la tienda
-      </Link>
+      <h1 className="text-4xl font-bold text-leaf-dark mb-4">Tienda de Plantas</h1>
+      <p className="text-gray-600 mb-8">Encuentra todo lo que necesitas para tus plantas</p>
 
-      <div className="grid md:grid-cols-2 gap-8 mb-12">
-        <div className="relative h-[400px] rounded-lg overflow-hidden">
-          <Image
-            src={product.image || "/placeholder.svg?height=400&width=600"}
-            alt={product.name}
-            fill
-            className="object-contain"
-            priority
-          />
+      <LocationBanner />
+
+      <div className="grid lg:grid-cols-4 gap-6 mb-8">
+        {/* Sidebar de filtros */}
+        <div className="lg:col-span-1 space-y-6">
+          <ProductSearchFilter />
+          <ProductTagFilter selectedTags={selectedTags} />
         </div>
 
-        <div className="space-y-4">
-          <div className="inline-block px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
-            {product.category}
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900">{product.name}</h1>
-          <p className="text-2xl font-bold text-green-700">S/ {product.price.toFixed(2)}</p>
-
-          <div className="border-t border-b py-4 my-4">
-            <p className="text-gray-700">{product.description}</p>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <span className="text-gray-700">Disponibilidad:</span>
-            {product.stock > 0 ? (
-              <span className="text-green-600">{product.stock} en stock</span>
-            ) : (
-              <span className="text-red-600">Agotado</span>
-            )}
+        {/* Contenido principal */}
+        <div className="lg:col-span-3">
+          {/* Información de resultados */}
+          <div className="mb-6">
+            <p className="text-gray-600">
+              {allProducts.length === 0
+                ? "No se encontraron productos"
+                : `Mostrando ${productsToDisplay.length} de ${allProducts.length} productos`}
+            </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-4 pt-4">
-            <Button className="bg-green-600 hover:bg-green-700 flex-1" disabled={product.stock <= 0}>
-              Ver información
-            </Button>
+          {/* Grid de productos */}
+          {productsToDisplay.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+              {productsToDisplay.map((product) => (
+                <ProductCard key={product._id} product={product} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-gray-500 text-lg mb-4">No se encontraron productos</p>
+              <p className="text-gray-400">Intenta ajustar los filtros de búsqueda</p>
+            </div>
+          )}
 
-            {product.facebookUrl && (
-              <Button variant="outline" className="border-blue-500 text-blue-500 hover:bg-blue-50 flex-1" asChild>
-                <a href={product.facebookUrl} target="_blank" rel="noopener noreferrer">
-                  <Facebook className="mr-2 h-4 w-4" />
-                  Ver en Facebook
-                </a>
-              </Button>
-            )}
-          </div>
+          {/* Paginación */}
+          {totalPages > 1 && (
+            <Suspense fallback={<div className="flex justify-center py-4">Cargando...</div>}>
+              <PaginationControl currentPage={currentPage} totalPages={totalPages} />
+            </Suspense>
+          )}
         </div>
       </div>
-
-      {filteredRelatedProducts.length > 0 && (
-        <div className="mt-16">
-          <h2 className="text-2xl font-bold mb-6">Productos relacionados</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {filteredRelatedProducts.map((relatedProduct: Product) => (
-              <Card key={relatedProduct._id} className="overflow-hidden">
-                <div className="relative h-48">
-                  <Image
-                    src={relatedProduct.image || "/placeholder.svg?height=200&width=400"}
-                    alt={relatedProduct.name}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-                <CardContent className="p-4">
-                  <h3 className="font-bold text-lg mb-1">{relatedProduct.name}</h3>
-                  <p className="text-sm text-gray-600 mb-2 line-clamp-2">{relatedProduct.description}</p>
-                  <div className="text-lg font-bold text-green-700">S/ {relatedProduct.price.toFixed(2)}</div>
-                  <Button className="w-full mt-3 bg-green-600 hover:bg-green-700" asChild>
-                    <Link href={`/tienda/${relatedProduct._id}`}>Ver detalles</Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   )
 }

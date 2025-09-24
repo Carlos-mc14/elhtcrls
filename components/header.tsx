@@ -14,14 +14,28 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { SearchBar } from "@/components/search-bar"
-import { Menu, X, LogOut, User, Settings, Leaf, Home, ShoppingBag, BookOpen } from "lucide-react"
+import {
+  Menu,
+  X,
+  LogOut,
+  User,
+  Settings,
+  Leaf,
+  Home,
+  ShoppingBag,
+  BookOpen,
+  MessageCircle,
+  ShoppingCart,
+} from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
+import { useCart } from "@/hooks/use-cart"
 
 export default function Header() {
   const { data: session } = useSession()
   const pathname = usePathname()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const { totalItems } = useCart()
 
   // Detectar scroll para cambiar el estilo del header
   useEffect(() => {
@@ -42,6 +56,13 @@ export default function Header() {
     { name: "Blog", href: "/posts", icon: <BookOpen className="h-4 w-4 mr-2" /> },
     { name: "Tienda", href: "/tienda", icon: <ShoppingBag className="h-4 w-4 mr-2" /> },
   ]
+
+  const handleWhatsAppContact = () => {
+    const phoneNumber = "51987654321" // Reemplaza con tu número de WhatsApp
+    const message = "Hola! Me interesa conocer más sobre El Huerto De Carlos"
+    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`
+    window.open(whatsappUrl, "_blank")
+  }
 
   return (
     <motion.header
@@ -110,6 +131,21 @@ export default function Header() {
         </nav>
 
         <div className="flex items-center gap-4">
+          <Button asChild variant="ghost" size="icon" className="relative hover:bg-leaf-light/20 focus-visible-ring">
+            <Link href="/carrito" aria-label={`Ver carrito (${totalItems} productos)`}>
+              <ShoppingCart className="h-5 w-5 text-leaf-dark" />
+              {totalItems > 0 && (
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium"
+                >
+                  {totalItems > 99 ? "99+" : totalItems}
+                </motion.span>
+              )}
+            </Link>
+          </Button>
+
           {session ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -163,17 +199,11 @@ export default function Header() {
           ) : (
             <div className="hidden md:flex items-center gap-2">
               <Button
-                variant="ghost"
-                asChild
-                className="hover:bg-leaf-light/20 hover:text-leaf-dark transition-colors focus-visible-ring"
+                onClick={handleWhatsAppContact}
+                className="bg-green-500 hover:bg-green-600 text-white shadow-md hover:shadow-lg transition-all duration-300 focus-visible-ring flex items-center gap-2"
               >
-                <Link href="/auth/login">Iniciar Sesión</Link>
-              </Button>
-              <Button
-                asChild
-                className="bg-gradient-green hover:brightness-110 text-white shadow-md hover:shadow-lg transition-all duration-300 focus-visible-ring"
-              >
-                <Link href="/auth/register">Registrarse</Link>
+                <MessageCircle className="h-4 w-4" />
+                Contactar por WhatsApp
               </Button>
             </div>
           )}
@@ -228,19 +258,31 @@ export default function Header() {
                     </Link>
                   )
                 })}
+
+                <Link
+                  href="/carrito"
+                  className="px-4 py-2 text-sm font-medium rounded-md transition-all duration-300 flex items-center justify-between focus-visible-ring hover:bg-leaf-light/10 hover:border-l-4 hover:border-leaf-light"
+                >
+                  <div className="flex items-center">
+                    <ShoppingCart className="h-4 w-4 mr-2" />
+                    Carrito
+                  </div>
+                  {totalItems > 0 && (
+                    <span className="bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                      {totalItems > 99 ? "99+" : totalItems}
+                    </span>
+                  )}
+                </Link>
               </nav>
 
               {!session && (
-                <div className="grid grid-cols-2 gap-2 mt-2">
+                <div className="mt-2">
                   <Button
-                    variant="outline"
-                    asChild
-                    className="border-leaf-light hover:border-leaf-medium hover:bg-leaf-light/10 focus-visible-ring"
+                    onClick={handleWhatsAppContact}
+                    className="w-full bg-green-500 hover:bg-green-600 text-white shadow-md hover:shadow-lg transition-all duration-300 focus-visible-ring flex items-center justify-center gap-2"
                   >
-                    <Link href="/auth/login">Iniciar Sesión</Link>
-                  </Button>
-                  <Button asChild className="bg-gradient-green hover:brightness-110 text-white focus-visible-ring">
-                    <Link href="/auth/register">Registrarse</Link>
+                    <MessageCircle className="h-4 w-4" />
+                    Contactar por WhatsApp
                   </Button>
                 </div>
               )}

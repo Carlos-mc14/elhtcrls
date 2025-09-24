@@ -4,7 +4,17 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, FileText, Users, ShoppingBag, ChevronLeft, ChevronRight } from "lucide-react"
+import {
+  LayoutDashboard,
+  FileText,
+  Users,
+  ShoppingBag,
+  ChevronLeft,
+  ChevronRight,
+  Tags,
+  ShoppingCart,
+  ChefHat,
+} from "lucide-react"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 
@@ -32,6 +42,24 @@ export function AdminSidebar() {
       title: "Productos",
       href: "/admin/products",
       icon: <ShoppingBag className="h-5 w-5" />,
+      exact: false,
+    },
+    {
+      title: "Carritos",
+      href: "/admin/carts",
+      icon: <ShoppingCart className="h-5 w-5" />,
+      exact: false,
+    },
+    {
+      title: "Eventos Gastronómicos",
+      href: "/admin/food-events",
+      icon: <ChefHat className="h-5 w-5" />,
+      exact: false,
+    },
+    {
+      title: "Etiquetas",
+      href: "/admin/tags",
+      icon: <Tags className="h-5 w-5" />,
       exact: false,
     },
     ...(isAdmin
