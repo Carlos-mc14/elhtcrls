@@ -1,112 +1,75 @@
-// models/tag.ts
-import mongoose, { type Document, type Model } from "mongoose"
+// lib/api/tags.ts
 
-export interface TagDoc extends Document {
-  name: string
-  slug: string
-  internalId: string
-  description?: string
-  color?: string
-  isVisible: boolean
-  priceRange?: {
-    min: number
-    max: number
-    price: number
-    unit: string // "cm", "unidad", etc.
-  }
-  type: "category" | "size" | "care" | "location" // cactus, interiores, etc.
-  createdAt: Date
-  updatedAt: Date
+import type { Tag } from "@/types/tag"
+import { buildApiUrl } from "@/lib/utils/api-utils"
+
+interface GetTagsOptions {
+  type?: "category" | "size" | "care" | "location"
+  visible?: boolean
+  search?: string
 }
 
-const tagSchema = new mongoose.Schema(
-  {
-    name: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    slug: {
-      type: String,
-      required: true,
-      unique: true,
-      lowercase: true,
-      trim: true,
-    },
-    internalId: {
-      type: String,
-      required: true,
-      unique: true,
-      trim: true,
-    },
-    description: {
-      type: String,
-      trim: true,
-    },
-    color: {
-      type: String,
-      default: "#10b981", // verde por defecto
-    },
-    isVisible: {
-      type: Boolean,
-      default: true,
-    },
-    priceRange: {
-      min: {
-        type: Number,
-      },
-      max: {
-        type: Number,
-      },
-      price: {
-        type: Number,
-      },
-      unit: {
-        type: String,
-        default: "cm",
-      },
-    },
-    type: {
-      type: String,
-      enum: ["category", "size", "care", "location"],
-      required: true,
-    },
-  },
-  { timestamps: true },
-)
+export async function getTags(options: GetTagsOptions = {}): Promise<Tag[]> {
+  try {
+    const { type, visible, search } = options
 
-// ✅ NUEVO: Pre-hook para generar internalId automáticamente si no existe
-tagSchema.pre('save', function(next) {
-  if (!this.internalId && this.name && this.type) {
-    const cleanName = this.name
-      .toLowerCase()
-      .trim()
-      .replace(/[^\w\s-]/g, "")
-      .replace(/[\s_-]+/g, "-")
-      .replace(/^-+|-+$/g, "")
-    
-    this.internalId = `${this.type}-${cleanName}`
+    const searchParams = new URLSearchParams()
+    if (type) searchParams.append("type", type)
+    if (visible !== undefined) searchParams.append("visible", String(visible))
+    if (search) searchParams.append("search", search)
+
+    const response = await fetch(buildApiUrl("/api/tags", searchParams), {
+      next: { revalidate: 3600 }, // Cache por 1 hora
+    })
+
+    if (!response.ok) {
+      throw new Error(`Error al obtener etiquetas: ${response.status}`)
+    }
+
+    const data = await response.json()
+
+    // Aceptar varias formas de respuesta
+    const items: any[] = Array.isArray(data) ? data : data?.tags || data?.data || []
+
+    return items as Tag[]
+  } catch (error) {
+    console.error("Error al obtener etiquetas:", error)
+    return []
   }
-  next()
-})
+}
 
-// Índices para optimizar búsquedas
-tagSchema.index({ slug: 1 })
-tagSchema.index({ internalId: 1 })
-tagSchema.index({ type: 1 })
-tagSchema.index({ isVisible: 1 })
-tagSchema.index({ name: 1, type: 1 }) // ✅ NUEVO: Índice compuesto para búsquedas
+// Función para obtener una etiqueta específica
+export async function getTag(id: string): Promise<Tag | null> {
+  try {
+    const response = await fetch(buildApiUrl(`/api/tags/${encodeURIComponent(id)}`), {
+      next: { revalidate: 3600 },
+    })
 
-// Normalizar JSON para el frontend
-tagSchema.set("toJSON", {
-  virtuals: true,
-  versionKey: false,
-  transform: (_doc, ret: any) => {
-    if (ret._id) ret._id = String(ret._id)
-    if (ret.createdAt && ret.createdAt.toISOString) ret.createdAt = ret.createdAt.toISOString()
-    if (ret.updatedAt && ret.updatedAt.toISOString) ret.updatedAt = ret.updatedAt.toISOString()
-    return ret
-  },
-})
+    if (!response.ok) {
+      throw new Error(`Error al obtener etiqueta: ${response.status}`)
+    }
 
-export const Tag: Model<TagDoc> = (mongoose.models.Tag as Model<TagDoc>) || mongoose.model<TagDoc>("Tag", tagSchema)
+    const data = await response.json()
+    return data?.tag || data || null
+  } catch (error) {
+    console.error("Error al obtener etiqueta:", error)
+    return null
+  }
+}
+
+// Funciones de utilidad para obtener etiquetas específicas
+export async function getVisibleTags(): Promise<Tag[]> {
+  return getTags({ visible: true })
+}
+
+export async function getTagsByType(type: "category" | "size" | "care" | "location"): Promise<Tag[]> {
+  return getTags({ type, visible: true })
+}
+
+export async function getCategoryTags(): Promise<Tag[]> {
+  return getTagsByType("category")
+}
+
+export async function getSizeTags(): Promise<Tag[]> {
+  return getTagsByType("size")
+}

@@ -1,72 +1,96 @@
-import mongoose, { Schema, type Document } from "mongoose"
+import type { FoodEvent, CreateFoodEventData } from "@/types/food-event"
+import { buildApiUrl } from "@/lib/utils/api-utils"
 
-export interface IFoodEvent extends Document {
-  _id: string
-  title: string
-  description: string
-  eventDate: Date
-  reservationDeadline: Date
-  pricePerPlate: number
-  maxPlates: number
-  availablePlates: number
-  image?: string
-  isActive: boolean
-  createdAt: Date
-  updatedAt: Date
+const API_BASE = "/api/food-events"
+
+export async function getFoodEvents(options?: {
+  includeInactive?: boolean
+  upcoming?: boolean
+}): Promise<FoodEvent[]> {
+  const params = new URLSearchParams()
+
+  if (options?.includeInactive) {
+    params.append("includeInactive", "true")
+  }
+
+  if (options?.upcoming) {
+    params.append("upcoming", "true")
+  }
+
+  const fullUrl = buildApiUrl(API_BASE, params)
+
+  const response = await fetch(fullUrl, {
+    cache: "no-store",
+  })
+
+  if (!response.ok) {
+    throw new Error("Error al obtener eventos gastronómicos")
+  }
+
+  return response.json()
 }
 
-const FoodEventSchema = new Schema<IFoodEvent>(
-  {
-    title: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    description: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    eventDate: {
-      type: Date,
-      required: true,
-    },
-    reservationDeadline: {
-      type: Date,
-      required: true,
-    },
-    pricePerPlate: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
-    maxPlates: {
-      type: Number,
-      required: true,
-      min: 1,
-    },
-    availablePlates: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
-    image: {
-      type: String,
-      trim: true,
-    },
-    isActive: {
-      type: Boolean,
-      default: true,
-    },
-  },
-  {
-    timestamps: true,
-  },
-)
+export async function getFoodEvent(id: string): Promise<FoodEvent> {
+  const fullUrl = buildApiUrl(`${API_BASE}/${id}`)
 
-// Índices para optimizar consultas
-FoodEventSchema.index({ eventDate: 1 })
-FoodEventSchema.index({ isActive: 1 })
-FoodEventSchema.index({ reservationDeadline: 1 })
+  const response = await fetch(fullUrl, {
+    cache: "no-store",
+  })
 
-export const FoodEvent = mongoose.models.FoodEvent || mongoose.model<IFoodEvent>("FoodEvent", FoodEventSchema)
+  if (!response.ok) {
+    throw new Error("Error al obtener evento")
+  }
+
+  return response.json()
+}
+
+export async function createFoodEvent(data: CreateFoodEventData): Promise<FoodEvent> {
+  const fullUrl = buildApiUrl(API_BASE)
+
+  const response = await fetch(fullUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || "Error al crear evento")
+  }
+
+  return response.json()
+}
+
+export async function updateFoodEvent(id: string, data: Partial<CreateFoodEventData>): Promise<FoodEvent> {
+  const fullUrl = buildApiUrl(`${API_BASE}/${id}`)
+
+  const response = await fetch(fullUrl, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || "Error al actualizar evento")
+  }
+
+  return response.json()
+}
+
+export async function deleteFoodEvent(id: string): Promise<void> {
+  const fullUrl = buildApiUrl(`${API_BASE}/${id}`)
+
+  const response = await fetch(fullUrl, {
+    method: "DELETE",
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || "Error al eliminar evento")
+  }
+}

@@ -1,74 +1,88 @@
-import mongoose, { Schema, type Document } from "mongoose"
+import type { FoodReservation, CreateReservationData } from "@/types/food-event"
+import { buildApiUrl } from "@/lib/utils/api-utils"
 
-export interface IFoodReservation extends Document {
-  _id: string
-  eventId: mongoose.Types.ObjectId
-  customerName: string
-  customerPhone: string
-  customerEmail?: string
-  numberOfPlates: number
-  totalAmount: number
-  status: "pending" | "confirmed" | "cancelled"
-  whatsappMessageSent: boolean
-  notes?: string
-  createdAt: Date
-  updatedAt: Date
+const API_BASE = "/api/food-reservations"
+
+export async function getFoodReservations(options?: {
+  eventId?: string
+  status?: string
+}): Promise<FoodReservation[]> {
+  const params = new URLSearchParams()
+
+  if (options?.eventId) {
+    params.append("eventId", options.eventId)
+  }
+
+  if (options?.status) {
+    params.append("status", options.status)
+  }
+
+  const fullUrl = buildApiUrl(API_BASE, params)
+
+  const response = await fetch(fullUrl, {
+    cache: "no-store",
+  })
+
+  if (!response.ok) {
+    throw new Error("Error al obtener reservas")
+  }
+
+  return response.json()
 }
 
-const FoodReservationSchema = new Schema<IFoodReservation>(
-  {
-    eventId: {
-      type: Schema.Types.ObjectId,
-      ref: "FoodEvent",
-      required: true,
-    },
-    customerName: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    customerPhone: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    customerEmail: {
-      type: String,
-      trim: true,
-    },
-    numberOfPlates: {
-      type: Number,
-      required: true,
-      min: 1,
-    },
-    totalAmount: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
-    status: {
-      type: String,
-      enum: ["pending", "confirmed", "cancelled"],
-      default: "pending",
-    },
-    whatsappMessageSent: {
-      type: Boolean,
-      default: false,
-    },
-    notes: {
-      type: String,
-      trim: true,
-    },
-  },
-  {
-    timestamps: true,
-  },
-)
+export async function getFoodReservation(id: string): Promise<FoodReservation> {
+  const response = await fetch(buildApiUrl(`${API_BASE}/${id}`), {
+    cache: "no-store",
+  })
 
-// Índices para optimizar consultas
-FoodReservationSchema.index({ eventId: 1 })
-FoodReservationSchema.index({ status: 1 })
-FoodReservationSchema.index({ createdAt: -1 })
+  if (!response.ok) {
+    throw new Error("Error al obtener reserva")
+  }
 
-export const FoodReservation =
-  mongoose.models.FoodReservation || mongoose.model<IFoodReservation>("FoodReservation", FoodReservationSchema)
+  return response.json()
+}
+
+export async function createFoodReservation(data: CreateReservationData): Promise<FoodReservation> {
+  const response = await fetch(buildApiUrl(API_BASE), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || "Error al crear reserva")
+  }
+
+  return response.json()
+}
+
+export async function updateFoodReservation(id: string, data: Partial<FoodReservation>): Promise<FoodReservation> {
+  const response = await fetch(buildApiUrl(`${API_BASE}/${id}`), {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || "Error al actualizar reserva")
+  }
+
+  return response.json()
+}
+
+export async function deleteFoodReservation(id: string): Promise<void> {
+  const response = await fetch(buildApiUrl(`${API_BASE}/${id}`), {
+    method: "DELETE",
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || "Error al eliminar reserva")
+  }
+}

@@ -1,5 +1,6 @@
 import redis from "@/lib/redis"
 import type { Cart, CartItem, ReservedStock } from "@/types/cart"
+import { getApiBaseUrl } from "@/lib/utils/api-utils"
 
 const CART_TTL = 14 * 24 * 60 * 60 // 2 semanas en segundos
 const RESERVATION_TTL = 30 * 60 // 30 minutos para reservas temporales
@@ -43,7 +44,7 @@ export async function deleteCartFromRedis(cartId: string): Promise<void> {
 
 export async function reserveStock(cartId: string, items: CartItem[]): Promise<boolean> {
   try {
-    const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
+    const baseUrl = getApiBaseUrl()
 
     // Verificar stock disponible para cada item usando API
     for (const item of items) {
@@ -131,7 +132,7 @@ export async function markCartAsSold(cartId: string, soldBy: string): Promise<bo
       throw new Error("El carrito no está activo")
     }
 
-    const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
+    const baseUrl = getApiBaseUrl()
 
     // Reducir stock de productos usando API
     for (const item of cart.items) {
@@ -197,7 +198,7 @@ export async function validateCartStock(cartId: string): Promise<{ valid: boolea
     }
 
     const errors: string[] = []
-    const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
+    const baseUrl = getApiBaseUrl()
 
     for (const item of cart.items) {
       const response = await fetch(`${baseUrl}/api/products/${item.productId}/validate-stock`, {
