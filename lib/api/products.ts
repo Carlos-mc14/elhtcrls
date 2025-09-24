@@ -9,7 +9,7 @@ interface GetProductsOptions {
 }
 
 function buildUrl(path: string, params: URLSearchParams) {
-  const base = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+  const base = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
   const qs = params.toString()
   return `${base.replace(/\/$/, "")}${path}${qs ? `?${qs}` : ""}`
 }

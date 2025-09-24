@@ -43,7 +43,7 @@ export async function deleteCartFromRedis(cartId: string): Promise<void> {
 
 export async function reserveStock(cartId: string, items: CartItem[]): Promise<boolean> {
   try {
-    const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
 
     // Verificar stock disponible para cada item usando API
     for (const item of items) {
@@ -131,7 +131,7 @@ export async function markCartAsSold(cartId: string, soldBy: string): Promise<bo
       throw new Error("El carrito no está activo")
     }
 
-    const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
 
     // Reducir stock de productos usando API
     for (const item of cart.items) {
@@ -197,7 +197,7 @@ export async function validateCartStock(cartId: string): Promise<{ valid: boolea
     }
 
     const errors: string[] = []
-    const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
 
     for (const item of cart.items) {
       const response = await fetch(`${baseUrl}/api/products/${item.productId}/validate-stock`, {
